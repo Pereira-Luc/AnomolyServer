@@ -9,8 +9,6 @@ import express from 'express';
 import * as http from "http";
 import {startStandaloneServer} from "@apollo/server/standalone";
 
-
-
 const schemas = makeExecutableSchema({
     resolvers: [resolvers],
     typeDefs: [typeDefinitions],
@@ -34,7 +32,6 @@ const main = async () => {
 
     return url;
 }
-
 
 main().then( async (url) => {
     console.log(`🚀 Server listening at: ${url}`);
