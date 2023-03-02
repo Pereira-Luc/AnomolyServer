@@ -21,7 +21,6 @@ export const Auth = async (user:String, pass:String) => {
 
     // Username and password
     const userId = userInfo.userId;
-    const username = userInfo.username;
     const hashedPassword = userInfo.password;
 
     // Check if the user and password are correct
