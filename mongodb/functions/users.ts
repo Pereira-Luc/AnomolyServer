@@ -1,42 +1,47 @@
 import {Auth} from "../../graphql/functions/Auth";
-
 const anomolyDb = require('../mongoConnection');
 
 
+// hash a password and store it in the database
+export const hashPassword = async (password: String): Promise<string> => {
+    console.log('Hashing password');
+    const bcrypt = require('bcrypt');
+    const salt = await bcrypt.genSalt(10);
+    return await bcrypt.hash(password,salt);
+}
+
 
 //Get all information about a user
-export const getUser = async (username: string) :Promise<any> => {
+export const getUser = async (username: String) :Promise<any> => {
     const db = await anomolyDb.getDb()
-
-    let r = await db.collection('Users').findOne({ username: username });
-    console.log("Getting user");
-    return r;
+    return await db.collection('Users').findOne({username: username});
 }
 
 //Check if User exists
-export const userExists = async (username: string) :Promise<any> => {
-    console.log('Checking if user exists');
-    return (await getUser(username));
+export const userExists = async (username: String) :Promise<any> => {
+    return await getUser(username);
 
 }
 
 
 //Create a new user
-export const createUser = async (username: string, password: string) :Promise<any> => {
+export const createUser = async (username: String, password: String) :Promise<any> => {
     const db = await anomolyDb.getDb()
     let userId = await generateUserId();
 
     if (userId === -1) {
         throw new Error('Could not generate user ID.');
     }
+    let hashedPassword = await hashPassword(password);
+
+    console.log("Hashed password: " + hashedPassword);
 
     const result = await db.collection('Users').insertOne({
         userId: userId,
         username: username,
-        password: password
+        password: hashedPassword
     })
 
-    console.log(result);
 
     if (result.acknowledged) {
         console.log('User created successfully.');

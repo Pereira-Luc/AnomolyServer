@@ -1,5 +1,6 @@
 import { sign } from 'jsonwebtoken'
 import { config } from 'dotenv';
+import {getUser} from "../../mongodb/functions/users";
 config();
 
 const appSecret = process.env.APP_SECRET || null;
@@ -10,14 +11,21 @@ if (appSecret === null) {
 
 
 // Authentication function for the app password is already hashed
-export const Auth = (user:String, pass:String) => {
+export const Auth = async (user:String, pass:String) => {
+    const bcrypt = require('bcrypt');
+    //Get the user from the database
+    const userInfo = await getUser(user);
+
+    //Check if the user exists
+    if (userInfo === null) { throw new Error("Invalid username or password"); }
+
     // Username and password
-    const userId = "1";
-    const username = "acc";
-    const password = "1234";
+    const userId = userInfo.userId;
+    const username = userInfo.username;
+    const hashedPassword = userInfo.password;
 
     // Check if the user and password are correct
-    if (user === username && pass === password) {
+    if (await bcrypt.compare(pass, hashedPassword)) {
         // Generate jwt
         const token = sign({ userId: userId }, appSecret)
         const tokenExpiration = 1;
