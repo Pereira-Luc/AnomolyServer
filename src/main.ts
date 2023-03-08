@@ -33,8 +33,9 @@ const main = async () => {
 
     app.use('/graphql', cors<cors.CorsRequest>(), bodyParser.json(), expressMiddleware(apolloServer, {
         context: async ({ req }) => {
-            const isLoggedIn = await isAuth(req);
-            return { ...req, isLoggedIn };
+            const userInfo = await isAuth(req);
+            const isLoggedIn = userInfo !== false;
+            return { ...req, isLoggedIn, userInfo };
         }
     }));
 
