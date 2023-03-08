@@ -12,6 +12,7 @@ if (appSecret === null) {
 
 // Authentication function for the app password is already hashed
 export const Auth = async (user:String, pass:String) => {
+    console.log('Authenticating');
     const bcrypt = require('bcrypt');
     //Get the user from the database
     const userInfo = await getUser(user);
@@ -30,7 +31,7 @@ export const Auth = async (user:String, pass:String) => {
         const tokenExpiration = 1;
 
         //Add to the Auth
-        return {userId: userId, token: token, tokenExpiration: tokenExpiration};
+        return {token: token, tokenExpiration: tokenExpiration, user:{ userId: userId, username: user }};
     }
 
     throw new Error("Invalid username or password");
