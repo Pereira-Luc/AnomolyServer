@@ -54,7 +54,7 @@ const main = async () => {
     });
 
     httpsServer.listen(4001, () => {
-        console.log(`HTTPS Server running on port 443`);
+        console.log(`HTTPS Server running on port 4001`);
     });
 
 }
