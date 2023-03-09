@@ -2,6 +2,7 @@ export const UserData = /* GraphQL */ `
     type Query {
         login(username: String!, password: String!): AuthPayload!
         searchUser(v: String!): [UserInformation]!
+        loadFriends(status:String!): [UserInformation]!
         testLogin: String!
         fetchTest: String!
     }
@@ -12,9 +13,15 @@ export const UserData = /* GraphQL */ `
         password: String!
     }
     
+    type FriendRequestStatus {
+        needToAcceptBy: String
+        status: String
+    }
+    
     type UserInformation {
-        userId: ID!
-        username: String!
+        userId: ID
+        username: String
+        friendRequestStatus: FriendRequestStatus
     }
 
     type AuthPayload {
@@ -25,5 +32,7 @@ export const UserData = /* GraphQL */ `
     
     type Mutation {
         signUp(username: String!, password: String!, confirmPassword: String!): AuthPayload!
+        createFriends(friendUsername: String!): String!
+        acceptRequest(friendUsername: String!): String!
     }
 `
