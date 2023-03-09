@@ -16,11 +16,18 @@ export const getUser = async (username: String) :Promise<any> => {
     return await db.collection('Users').findOne({username: username});
 }
 
+//Get User using ID
+export const getUserById = async (userId: number) :Promise<any> => {
+    const db = await anomolyDb.getDb()
+    return await db.collection('Users').findOne({userId: userId});
+}
+
+
 //Check if User exists
 export const userExists = async (username: String) :Promise<any> => {
     return await getUser(username);
-}
 
+}
 
 //Create a new user
 export const createUser = async (username: String, password: String) :Promise<any> => {
@@ -41,7 +48,6 @@ export const createUser = async (username: String, password: String) :Promise<an
         username: username,
         password: hashedPassword,
     })
-
 
     if (result.acknowledged) {
         console.log('User created successfully.');
