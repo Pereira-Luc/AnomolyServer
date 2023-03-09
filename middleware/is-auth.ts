@@ -1,7 +1,8 @@
 import { verify } from "jsonwebtoken";
+import {getUserById} from "../mongodb/functions/users";
 
 export const isAuth = async (req: any) => {
-    const appSecret = process.env.APP_SECRET || null;
+    const userId = req.headers
 
 
     try {
@@ -26,9 +27,18 @@ export const isAuth = async (req: any) => {
         }
 
         try {
-            const decodedToken = verify(token, appSecret) as { userId: string };
-            if (decodedToken) { return true; }
+            //Try to decode the token and if it is valid user that is logged in
+            const decodedToken: any = verify(token, appSecret);
 
+            let user = await getUserById(decodedToken.userId);
+
+            //Check if the user exists
+            if (user === null) {
+                return false;
+            }
+
+            //If the user is logged in return true
+            return user;
         } catch (error) {
             //console.log('Invalid token');
             return false;
