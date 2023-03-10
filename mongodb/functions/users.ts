@@ -1,4 +1,5 @@
 import {Auth} from "../../graphql/functions/Auth";
+import {User} from "../../interfaces/User";
 const anomolyDb = require('../mongoConnection');
 
 // hash a password and store it in the database
@@ -11,21 +12,21 @@ export const hashPassword = async (password: String): Promise<string> => {
 
 
 //Get all information about a user
-export const getUser = async (username: String) :Promise<any> => {
+export const getUser = async (username: String) :Promise<User> => {
     const db = await anomolyDb.getDb()
     return await db.collection('Users').findOne({username: username});
 }
 
 //Get User using ID
-export const getUserById = async (userId: number) :Promise<any> => {
+export const getUserById = async (userId: number) :Promise<User> => {
     const db = await anomolyDb.getDb()
     return await db.collection('Users').findOne({userId: userId});
 }
 
 
 //Check if User exists
-export const userExists = async (username: String) :Promise<any> => {
-    return await getUser(username);
+export const userExists = async (username: String) :Promise<Boolean> => {
+    return !!(await getUser(username));
 
 }
 

@@ -2,6 +2,7 @@ import {Auth} from "../functions/Auth";
 import {signUp} from "../functions/signUp";
 import {searchUser} from "../functions/searchUser";
 import {acceptFriendRequest, createFriends, getAllFriends} from "../functions/createFriends";
+import {createChatRoom, sendMessage} from "../functions/chatsFunc";
 
 export const UserResolvers = {
     Query: {
@@ -47,6 +48,18 @@ export const UserResolvers = {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             return await acceptFriendRequest(context.userInfo.username, friendUsername);
+        },
+        createChatRoom: async (resolve: any, {user}: any, context: any) => {
+            //Check IF the user is authenticated
+            if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
+            return await createChatRoom(context.userInfo.username, user);
+        },
+        sendMsg: async (resolve: any, {receiver, message}: any, context: any) => {
+            //Check IF the user is authenticated
+            if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
+            return await sendMessage(context.userInfo.username, receiver, message);
         }
+
+
     }
 }

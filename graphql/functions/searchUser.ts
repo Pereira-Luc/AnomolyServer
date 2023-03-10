@@ -2,9 +2,8 @@
 //Returns array of users that are LIKE the username
 import {getDb} from "../../mongodb/mongoConnection";
 import {Status} from "../Enum/Status";
-import exp from "constants";
 import {userExists} from "../../mongodb/functions/users";
-import {WithId} from "mongodb";
+import {FriendRequestStatus} from "../../interfaces/FriendRequestStatus";
 
 export const searchUser = async (v: String , username: String): Promise<any> => {
     console.log('Searching for user input = ' + v);
@@ -23,7 +22,7 @@ export const searchUser = async (v: String , username: String): Promise<any> => 
 
 
 //This function is used to get the status of a friend request
-export const getFriendRequestStatus = async (username: String, friendUsername: String): Promise<any> => {
+export const getFriendRequestStatus = async (username: String, friendUsername: String): Promise<FriendRequestStatus> => {
     let db = await getDb();
 
     //Check if the user exists
@@ -34,23 +33,19 @@ export const getFriendRequestStatus = async (username: String, friendUsername: S
     if (!doesFriendExist) { throw new Error("Friend does not exist"); }
 
     //Get Status from the database
-    let statusL = await db.collection('Friends').findOne({username: username, friendUsername: friendUsername});
-
-    let statusR = await db.collection('Friends').findOne({username: friendUsername, friendUsername: username});
+    let status = await db.collection('Friends').findOne({$or: [{username: username, friendUsername: friendUsername}, {username: friendUsername, friendUsername: username}]});
 
     //If the user is not friends with the friend
-    if (statusL === null && statusR === null) { return {status: Status.Undefined, needToAcceptBy: ''}; }
+    if (!status) { return {status: Status.Undefined, needToAcceptBy: ''}; }
 
     //If the user is friends with the friend
-    if (statusL !== null && statusL.status === Status.Accepted) { return {status: Status.Accepted, needToAcceptBy: ''}}
-    if (statusR !== null && statusR.status === Status.Accepted) { return {status: Status.Accepted, needToAcceptBy: ''}}
+    if (status.status === Status.Accepted) { return {status: Status.Accepted, needToAcceptBy: ''}}
 
     //If the user has a pending friend request
-    if (statusL !== null && statusL.status === Status.Pending) { return {status: Status.Pending, needToAcceptBy: statusL.friendUsername}}
-    if (statusR !== null && statusR.status === Status.Pending) { return {status: Status.Pending, needToAcceptBy: statusR.friendUsername}}
+    if (status.status === Status.Pending) { return {status: Status.Pending, needToAcceptBy: status.friendUsername}}
 
     //If the user has declined a friend request
-    if (statusL !== null && statusL.status === Status.Declined) { return {status: Status.Declined, needToAcceptBy: statusL.friendUsername}}
-    if (statusR !== null && statusR.status === Status.Declined) { return {status: Status.Declined, needToAcceptBy: statusR.friendUsername}}
+    if (status.status === Status.Declined) { return {status: Status.Declined, needToAcceptBy: status.friendUsername}}
 
+    throw new Error("Friend request status could not be found");
 }

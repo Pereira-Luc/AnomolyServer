@@ -1,6 +1,7 @@
 import { sign } from 'jsonwebtoken'
 import { config } from 'dotenv';
 import {getUser} from "../../mongodb/functions/users";
+import {AuthPayload} from "../../interfaces/AuthPayload";
 config();
 
 const appSecret = process.env.APP_SECRET || null;
@@ -11,7 +12,7 @@ if (appSecret === null) {
 
 
 // Authentication function for the app password is already hashed
-export const Auth = async (user:String, pass:String) => {
+export const Auth = async (user:String, pass:String): Promise<AuthPayload> =>  {
     console.log('Authenticating');
     const bcrypt = require('bcrypt');
     //Get the user from the database
