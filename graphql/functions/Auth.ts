@@ -2,6 +2,7 @@ import { sign } from 'jsonwebtoken'
 import { config } from 'dotenv';
 import {getUser} from "../../mongodb/functions/users";
 import {AuthPayload} from "../../interfaces/AuthPayload";
+import {ObjectId} from "mongodb";
 config();
 
 const appSecret = process.env.APP_SECRET || null;
@@ -22,7 +23,7 @@ export const Auth = async (user:String, pass:String): Promise<AuthPayload> =>  {
     if (userInfo === null) { throw new Error("Invalid username or password"); }
 
     // Username and password
-    const userId = userInfo.userId;
+    const userId = new ObjectId(userInfo._id)
     const hashedPassword = userInfo.password;
 
     // Check if the user and password are correct
@@ -32,7 +33,7 @@ export const Auth = async (user:String, pass:String): Promise<AuthPayload> =>  {
         const tokenExpiration = 1;
 
         //Add to the Auth
-        return {token: token, tokenExpiration: tokenExpiration, user:{ userId: userId, username: user }};
+        return {token: token, tokenExpiration: tokenExpiration, user:{ _id: userId, username: user }};
     }
 
     throw new Error("Invalid username or password");
