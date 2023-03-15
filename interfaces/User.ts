@@ -1,7 +1,8 @@
 import {FriendRequestStatus} from "./FriendRequestStatus";
+import {ObjectId} from "mongodb";
 
 export interface User {
-    userId: number
+    _id: ObjectId
     username: String
     password?: String
     friendRequestStatus?: FriendRequestStatus
