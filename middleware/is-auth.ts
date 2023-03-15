@@ -1,13 +1,10 @@
 import { verify } from "jsonwebtoken";
 import {getUserById} from "../mongodb/functions/users";
+import {ObjectId} from "mongodb";
 
 export const isAuth = async (req: any) => {
-    const userId = req.headers
-
-
     try {
-        //console.log(context.req.headers.authorization);
-        const authHeader = req.headers.authorization;
+        const authHeader = req.Authorization || req.headers.authorization;
 
         //Check if the request has an authorization header
         if (!authHeader) {
