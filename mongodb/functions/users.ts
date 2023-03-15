@@ -1,5 +1,7 @@
 import {Auth} from "../../graphql/functions/Auth";
 import {User} from "../../interfaces/User";
+import {ObjectId} from "mongodb";
+
 const anomolyDb = require('../mongoConnection');
 
 // hash a password and store it in the database
@@ -18,9 +20,12 @@ export const getUser = async (username: String) :Promise<User> => {
 }
 
 //Get User using ID
-export const getUserById = async (userId: number) :Promise<User> => {
+export const getUserById = async (userId: ObjectId) :Promise<User> => {
+    //Check if userID is an ObjectId
+    if (typeof userId !== 'object') { userId = new ObjectId(userId); }
+
     const db = await anomolyDb.getDb()
-    return await db.collection('Users').findOne({userId: userId});
+    return await db.collection('Users').findOne({_id: userId});
 }
 
 

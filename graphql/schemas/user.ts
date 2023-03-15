@@ -17,8 +17,7 @@ export const UserData = /* GraphQL */ `
 
     # https://www.youtube.com/watch?v=0y81xnYGWUg Shows how to use subscriptions
     type Subscription {
-        loadChatFeed: [ChatFeed]!
-        loadChatMessages(chatId: ID!): [ChatMessage]!
+        sendMsg(chatId:ID!): ChatMessage!
     }
 
 
@@ -28,7 +27,7 @@ export const UserData = /* GraphQL */ `
     }
 
     type User {
-        userId: ID
+        _id: ID
         username: String!
         password: String
         friendRequestStatus: FriendRequestStatus
