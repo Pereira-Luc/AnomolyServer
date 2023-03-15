@@ -4,12 +4,22 @@ import {ObjectId} from "mongodb";
 import {Status} from "../Enum/Status";
 import {getFriendRequestStatus} from "./searchUser";
 import {User} from "../../interfaces/User";
+import {createChatRoom} from "./chatsFunc";
 
 //Status can be Pending, Accepted, Declined Enum
 
 // This function is used to get the friendship ID between two users
 export const getFriendshipId = async (username: String, friendUsername: String): Promise<ObjectId> => {
     const db = await getDb();
+
+    //Check if the user exists
+    let doesUserExist = await userExists(username);
+    let doesFriendExist = await userExists(friendUsername);
+
+    if (!doesUserExist) { throw new Error("User does not exist"); }
+    if (!doesFriendExist) { throw new Error("Friend does not exist"); }
+
+
     let friends = await db.collection('Friends').findOne({$or: [{username: username, friendUsername: friendUsername}, {username: friendUsername, friendUsername: username}]});
     if (friends) { return friends._id; }
 
@@ -18,7 +28,8 @@ export const getFriendshipId = async (username: String, friendUsername: String):
 
 const checkIfAlreadyRequested = async (username: String , friendUsername: String): Promise<boolean> => {
     let request =  await getFriendRequestStatus(username, friendUsername);
-    return !!request.status;
+    return request.status !== Status.Undefined;
+
 }
 
 export const checkIfFriends = async (username: String, friendUsername: String): Promise<boolean> => {
@@ -34,9 +45,10 @@ export const createFriends = async (username: String, friendUsername: String): P
     // Table Finds looks like this:
     // { Friends:
     //         - _id: ObjectID
-    //         - user_id: ObjectID
-    //         - friend_id: ObjectID
+    //         - username: String
+    //         - friendUsername: String
     //         - status: String (Accepted, Pending, Declined)
+    //         - chatID: ObjectID
     // }
 
     //Check if the user exists
@@ -103,15 +115,28 @@ export const getAllFriends = async (username: String, status: String): Promise<U
 
 //This function is used to accept a friend request
 export const acceptFriendRequest = async (username: String, friendUsername: String): Promise<String> => {
+    //Check if already friends
+    let areFriends = await checkIfFriends(username, friendUsername);
+    if (areFriends) { throw new Error("Already friends"); }
+
     console.log('Accepting friend request' + username + ' ' + friendUsername);
-    let db = await getDb();
+   let friendshipId = await getFriendshipId(username, friendUsername);
 
-    let result = await db.collection('Friends').updateOne(
-        {$or: [{username: friendUsername, friendUsername: username},
-                {username: username, friendUsername:friendUsername}]},
-        {$set: {status: Status.Accepted}});
+    const db = await getDb();
 
-    if (result.acknowledged) { return 'Friend request accepted successfully.'}
+    let result = await db.collection('Friends').updateOne({_id: friendshipId}, {$set: {status: Status.Accepted}});
+
+    if (result.acknowledged) {
+        //Create a chat between the two users
+        const chatRoom = await createChatRoom(friendshipId);
+        console.log(chatRoom);
+        if (!chatRoom) {
+            //If the chat room could not be created then go back to pending
+            await db.collection('Friends').updateOne({_id: friendshipId}, {$set: {status: Status.Pending}});
+        }
+
+        return 'Friend request accepted successfully.'
+    }
 
     throw new Error("Friend request could not be accepted");
 }
