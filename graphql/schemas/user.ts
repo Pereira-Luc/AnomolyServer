@@ -1,23 +1,33 @@
+
+
 export const UserData = /* GraphQL */ `
+    scalar Datetime
+    scalar Base64
+    
     type Query {
         login(username: String!, password: String!): AuthPayload!
         searchUser(v: String!): [User]!
         loadFriends(status:String!): [User]!
+        loadAllChatFeed: [ChatFeed]!
+        loadChatContent(chatId: ID!): [ChatMessage]!
+        checkIfPushNotificationIsEnabled: Boolean!
         testLogin: String!
         fetchTest: String!
     }
 
     type Mutation {
-        signUp(username: String!, password: String!, confirmPassword: String!): AuthPayload!
+        signUp(username: String!, password: String!, confirmPassword: String!, publicKey: Base64): AuthPayload!
         createFriends(friendUsername: String!): String!
         acceptRequest(friendUsername: String!): String!
         createChatRoom(user: String!): String!
-        sendMsg(receiver: String!, message: String!): ChatMessage!
+        sendMsg(receiver: String!, message: String!, chatId: ID!): ChatMessage!
+        savePushNotificationToken(token: String!): String!
+        changeProfilePicture(image: String!): Boolean!
     }
 
     # https://www.youtube.com/watch?v=0y81xnYGWUg Shows how to use subscriptions
     type Subscription {
-        sendMsg(chatId:ID!): ChatMessage!
+        chatRoomContent(chatId:ID!): ChatMessage!
     }
 
 
@@ -32,11 +42,13 @@ export const UserData = /* GraphQL */ `
         password: String
         friendRequestStatus: FriendRequestStatus
         chatId: ID
+        publicKey: Base64!
+        profilePic: String
     }
 
     type ChatMessage {
         message: String
-        messageTime: String
+        messageTime: Datetime
         sender: String
         receiver: String
     }
@@ -47,8 +59,10 @@ export const UserData = /* GraphQL */ `
     }
 
     type ChatFeed {
-        chatRoom: ChatRoom
-        lastMessage: ChatMessage
+        chatId: ID!
+        chatRoomName: String!
+        participants: [User]!
+        lastMessage: ChatMessage!
     }
 
     type AuthPayload {

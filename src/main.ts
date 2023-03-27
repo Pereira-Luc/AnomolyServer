@@ -15,6 +15,7 @@ import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { PubSub } from "graphql-subscriptions";
+import {sendPushNotification} from "../graphql/functions/pushNotifications";
 
 const main = async () => {
 

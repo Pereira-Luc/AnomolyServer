@@ -48,7 +48,7 @@ export const createFriends = async (username: String, friendUsername: String): P
     //         - username: String
     //         - friendUsername: String
     //         - status: String (Accepted, Pending, Declined)
-    //         - chatID: ObjectID
+    //         - chatId: ObjectID
     // }
 
     //Check if the user exists
@@ -92,7 +92,6 @@ export const getAllFriends = async (username: String, status: String): Promise<U
     for (let i = 0; i < union.length; i++) {
         let userInfo = union[i]
 
-
         //Check if status is accepted
         if (status === Status.Accepted && userInfo.status !== Status.Accepted) { continue;}
         //Check if status is pending
@@ -101,12 +100,20 @@ export const getAllFriends = async (username: String, status: String): Promise<U
         if (status === Status.Declined && userInfo.status !== Status.Declined) { continue;}
 
         if (userInfo.username === username) {
-            userInfoArray.push(await getUser(userInfo.friendUsername));
+            const user = await getUser(userInfo.friendUsername);
+            //Add chat id to user
+            user.chatId = userInfo.chatId;
+
+            userInfoArray.push(user);
             continue
         }
 
         if (userInfo.friendUsername === username) {
-            userInfoArray.push( await getUser(userInfo.username));
+            const user = await getUser(userInfo.username);
+            //Add chat id to user
+            user.chatId = userInfo.chatId;
+
+            userInfoArray.push(user);
         }
     }
 

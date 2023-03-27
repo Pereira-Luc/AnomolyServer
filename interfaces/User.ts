@@ -6,5 +6,8 @@ export interface User {
     username: String
     password?: String
     friendRequestStatus?: FriendRequestStatus
-
+    chatId?: ObjectId
+    publicKey: string
+    pushNotificationToken?: string
+    profilePic?: string
 }

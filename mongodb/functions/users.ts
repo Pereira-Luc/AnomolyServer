@@ -36,7 +36,7 @@ export const userExists = async (username: String) :Promise<Boolean> => {
 }
 
 //Create a new user
-export const createUser = async (username: String, password: String) :Promise<any> => {
+export const createUser = async (username: String, password: String, publicKey: Uint8Array) :Promise<any> => {
     const db = await anomolyDb.getDb()
     let userId = await generateUserId();
 
@@ -53,6 +53,7 @@ export const createUser = async (username: String, password: String) :Promise<an
         userId: userId,
         username: username,
         password: hashedPassword,
+        publicKey: publicKey,
     })
 
     if (result.acknowledged) {
@@ -82,3 +83,18 @@ const generateUserId = async () :Promise<number> => {
         return -1;
     }
 }
+
+//Save user's pushNotificationToken
+export const savePushNotificationToken = async (userId: ObjectId, pushNotificationToken: String) :Promise<Boolean> => {
+    //Check if userID is an Object
+    if (typeof userId !== 'object') { userId = new ObjectId(userId); }
+
+    console.log("Saving push notification token: " + pushNotificationToken);
+    console.log("User ID: " + userId);
+
+    const db = await anomolyDb.getDb()
+    const result = await db.collection('Users').updateOne( {_id: userId}, {$set: {pushNotificationToken: pushNotificationToken}});
+    //Check if worked
+    return  result.modifiedCount === 1;
+}
+
