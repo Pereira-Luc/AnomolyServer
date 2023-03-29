@@ -134,7 +134,7 @@ export const sendMessage = async (sender: string, receiver:string ,message: stri
         if (receiverInfo) {
             const notificationToken = receiverInfo.pushNotificationToken;
             if (notificationToken) {
-                sendPushNotification(notificationToken, sender , message);
+                await sendPushNotification(notificationToken, sender, message);
             }
         }
 
@@ -151,14 +151,14 @@ export const loadChatFeed = async (username: String): Promise<ChatFeed []> => {
     let db = await getDb();
     let friends = await getAllFriends(username, Status.Accepted)
 
-
     let chatFeed: ChatFeed[] = [];
 
     for (let i = 0; i < friends.length; i++) {
         //Chat ID can be null but since we are only getting the accepted friends,
         // the chat ID should never be null
         let friendInfo = friends[i]
-        let chatId = friends[i].chatId;
+
+        let chatId = friendInfo.chatId;
         if (chatId) {
             let chat = await db.collection('Chats').findOne({_id: new ObjectId(chatId)});
             if (chat) {
@@ -169,10 +169,16 @@ export const loadChatFeed = async (username: String): Promise<ChatFeed []> => {
                 let profilePic = await getProfilePicture(friendInfo._id);
                 if (profilePic) { friendInfo.profilePic = profilePic }
 
-                chatFeed.push({ chatId: chatId ,chatRoomName: friendInfo.username, participants: friends, lastMessage: lastMessage});
+                chatFeed.push({ chatId: chatId ,chatRoomName: friendInfo.username, participants: [friendInfo], lastMessage: lastMessage});
             }
         }
     }
+
+    //order the chat feed by the last message time
+    chatFeed.sort((a, b) => {
+        return b.lastMessage.messageTime.getTime() - a.lastMessage.messageTime.getTime();
+    });
+
     return chatFeed;
 }
 
