@@ -62,6 +62,14 @@ export const UserResolvers = {
 
             return !!(user.pushNotificationToken);
         },
+        getUserProfilePicture: async (resolve: any, {userId}: any, context: any) : Promise<string> => {
+            //Check IF the user is authenticated
+            if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
+            console.log('Getting profile picture for user ' + context.userInfo.username);
+
+            //Check if users are friends
+            return 'Coming soon'
+        },
         testLogin: async (resolve: any, parent: any, context: any) => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) {
@@ -112,7 +120,7 @@ export const UserResolvers = {
     Subscription: {
         chatRoomContent: {
             subscribe: async (_: any, {chatId}: any, {userInfo, pubSub}:any) => {
-                console.log('------------------- Subscribing to sendMsg --------------');
+                console.log('------------------- Subscribing to SEND_MSG_${chatId}  --------------');
                 if (!userInfo) {
                     throw new Error("You are not authenticated");
                 }
@@ -122,7 +130,10 @@ export const UserResolvers = {
                     throw new Error("You are not part of this chat");
                 }
 
-                return pubSub.asyncIterator(['SEND_MSG']);
+                // Create a unique event name for the chat room
+                const eventName = `SEND_MSG_${chatId}`;
+
+                return pubSub.asyncIterator([eventName]);
             }
         }
     }

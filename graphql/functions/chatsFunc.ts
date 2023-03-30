@@ -119,7 +119,7 @@ export const sendMessage = async (sender: string, receiver:string ,message: stri
     }, {$push: {messages: {message: message, messageTime: date, sender: sender, receiver: receiver}}});
 
     if (result.acknowledged) {
-        await pubSub.publish('SEND_MSG', {
+        await pubSub.publish(`SEND_MSG_${chatId}`, {
             chatRoomContent: {
                 chatId: chatId,
                 message: message,
@@ -133,8 +133,15 @@ export const sendMessage = async (sender: string, receiver:string ,message: stri
         let receiverInfo = await getUser(receiver);
         if (receiverInfo) {
             const notificationToken = receiverInfo.pushNotificationToken;
+
+            const data = {
+                chatRoomId: chatId,
+                nameOfUser: receiver,
+                userInfo: receiverInfo
+            }
+
             if (notificationToken) {
-                await sendPushNotification(notificationToken, sender, message);
+                sendPushNotification(notificationToken, sender, 'Sent you a message', data);
             }
         }
 
