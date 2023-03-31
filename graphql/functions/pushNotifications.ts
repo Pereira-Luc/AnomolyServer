@@ -1,13 +1,18 @@
 
 //Explain: https://www.youtube.com/watch?v=OLXw0X6dlnM
 
-export const sendPushNotification = async (token: string, title: string, body: string) => {
+export const sendPushNotification = async (token: string, title: string, body: string, data: any) => {
     console.log('Sending push notification');
     const message = {
         to: token,
         title: title,
-        body: body
+        body: body,
+        data: {data: data},
+        priority: "high",
+        contentAvailable: true
     };
+
+    console.table(message)
 
     const request = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
@@ -18,6 +23,8 @@ export const sendPushNotification = async (token: string, title: string, body: s
     })
 
     const response = await request.json();
+
+    console.log(response.data);
 
     //Check if response is valid
     if (response.data.status !== 'ok') { console.log('Error sending push notification'); }
@@ -30,7 +37,10 @@ export const sendPushNotification = async (token: string, title: string, body: s
         body: JSON.stringify({ids: [response.data.id]}),
     })
 
-    //console.table(await success.json());
+    let res = await success.json();
+
+    //Check if response is valid
+    console.table(res.data);
 
 }
 
