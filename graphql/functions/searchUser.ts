@@ -2,19 +2,20 @@
 //Returns array of users that are LIKE the username
 import {getDb} from "../../mongodb/mongoConnection";
 import {Status} from "../Enum/Status";
-import {userExists} from "../../mongodb/functions/users";
+import {userExists, userExistsById} from "../../mongodb/functions/users";
 import {FriendRequestStatus} from "../../interfaces/FriendRequestStatus";
+import {ObjectId, WithId} from "mongodb";
 
-export const searchUser = async (v: String , username: String): Promise<any> => {
+export const searchUser = async (v: String , userId: ObjectId): Promise<any> => {
     console.log('Searching for user input = ' + v);
     const db = await getDb();
     let allUsers =  await db.collection('Users').find({username: {$regex: v, $options: 'i'}}).toArray();
 
     for (let i = 0; i < allUsers.length; i++) {
-        let otherUser = allUsers[i].username;
+        let otherUser = allUsers[i]._id;
 
         //Check Status of the friend request
-        allUsers[i].friendRequestStatus = await getFriendRequestStatus(username, otherUser);
+        allUsers[i].friendRequestStatus = await getFriendRequestStatus(userId, otherUser);
     }
 
     return allUsers;
@@ -22,7 +23,12 @@ export const searchUser = async (v: String , username: String): Promise<any> => 
 
 
 //This function is used to get the status of a friend request
-export const getFriendRequestStatus = async (username: String, friendUsername: String): Promise<FriendRequestStatus> => {
+/**
+ * @deprecated
+ * @param username
+ * @param friendUsername
+ */
+export const getFriendRequestStatusOld = async (username: String, friendUsername: String): Promise<FriendRequestStatus> => {
     let db = await getDb();
 
     //Check if the user exists
@@ -48,4 +54,32 @@ export const getFriendRequestStatus = async (username: String, friendUsername: S
     if (status.status === Status.Declined) { return {status: Status.Declined, needToAcceptBy: status.friendUsername}}
 
     throw new Error("Friend request status could not be found");
+}
+
+/**
+ * This function is used to get the status of a friend request
+ * @param userID
+ * @param friendId
+ */
+export const getFriendRequestStatus = async (userID: ObjectId, friendId: ObjectId): Promise<FriendRequestStatus> => {
+    const db = await getDb();
+
+    const doesUserExist = await userExistsById(userID);
+    const doesFriendExist = await userExistsById(friendId);
+
+    if (!doesUserExist) { throw new Error("User does not exist"); }
+    if (!doesFriendExist) { throw new Error("Friend does not exist"); }
+
+    const status = await db.collection('Friends').findOne({$or: [{userId: userID, friendId: friendId}, {userId: friendId, friendId: userID}]});
+
+    if (!status) { return {status: Status.Undefined, needToAcceptBy: ''}; }
+
+    if (status.status === Status.Accepted) { return {status: Status.Accepted, needToAcceptBy: ''}}
+
+    if (status.status === Status.Pending) { return {status: Status.Pending, needToAcceptBy: status.frindId}}
+
+    if (status.status === Status.Declined) { return {status: Status.Declined, needToAcceptBy: status.friendId}}
+
+    throw new Error("Friend request status could not be found");
+
 }

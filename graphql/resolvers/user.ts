@@ -16,6 +16,7 @@ import {
     savePushNotificationToken
 } from "../../mongodb/functions/users";
 import {changeProfilePicture} from "../../mongodb/functions/profilePic";
+import {User} from "../../interfaces/User";
 
 
 
@@ -30,18 +31,18 @@ export const UserResolvers = {
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             //Check if is empty remove spaces at the end and beginning
             if (v.trim() === "") { return []; }
-            return await searchUser(v, context.userInfo.username);
+            return await searchUser(v, new ObjectId(context.userInfo._id));
         },
         loadFriends: async (resolve: any, {status}: any, context: any) => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
-            return await getAllFriends(context.userInfo.username,status);
+            return await getAllFriends(new ObjectId(context.userInfo._id),status);
         },
         loadAllChatFeed: async (resolve: any, parent: any, context: any) => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             console.log('Loading chat feed for user ' + context.userInfo.username);
-            return await loadChatFeed(context.userInfo.username);
+            return await loadChatFeed(new ObjectId(context.userInfo._id));
         },
         loadChatContent: async (resolve: any, {chatId}: any, context: any) => {
             //Check IF the user is authenticated
@@ -57,7 +58,7 @@ export const UserResolvers = {
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             console.log('Checking if push notification is enabled for user ' + context.userInfo.username);
 
-            const user = await getUserById(context.userInfo._id);
+            const user:User = await getUserById(context.userInfo._id);
             if (user === null) { throw new Error("User not found"); }
 
             return !!(user.pushNotificationToken);
@@ -81,20 +82,20 @@ export const UserResolvers = {
             console.log('Signing up');
             return await signUp(resolve, {username, password, confirmPassword,publicKey}, context);
         },
-        createFriends: async (resolve: any, {friendUsername}: any, context: any) => {
+        createFriends: async (resolve: any, {friendId}: any, context: any) => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
-            return await createFriends(context.userInfo.username, friendUsername);
+            return await createFriends(new ObjectId(context.userInfo._id), new ObjectId(friendId));
         },
-        acceptRequest: async (resolve: any, {friendUsername}: any, context: any) => {
+        acceptRequest: async (resolve: any, {friendId}: any, context: any) => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
-            return await acceptFriendRequest(context.userInfo.username, friendUsername);
+            return await acceptFriendRequest(new ObjectId(context.userInfo._id), new ObjectId(friendId));
         },
-        sendMsg: async (resolve: any, {receiver, message, chatId}: any, context: any) => {
+        sendMsg: async (resolve: any, {receiverId, message, chatId}: any, context: any) => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
-            return await sendMessage(context.userInfo.username, receiver, message, context.pubSub, chatId);
+            return await sendMessage(new ObjectId(context.userInfo._id), new ObjectId(receiverId), message, context.pubSub, chatId);
         },
         savePushNotificationToken: async (resolve: any, {token}: any, context: any) => {
             console.log('Saving push notification token');
@@ -118,7 +119,7 @@ export const UserResolvers = {
                 }
 
                 //Check if the user is part of the chat
-                if (!await checkIfUserIsPartOfChat(userInfo.username,new ObjectId(chatId))) {
+                if (!await checkIfUserIsPartOfChat(new ObjectId(userInfo._id),new ObjectId(chatId))) {
                     throw new Error("You are not part of this chat");
                 }
 

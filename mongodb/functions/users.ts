@@ -32,7 +32,11 @@ export const getUserById = async (userId: ObjectId) :Promise<User> => {
 //Check if User exists
 export const userExists = async (username: String) :Promise<Boolean> => {
     return !!(await getUser(username));
+}
 
+//Check if User exists using ID
+export const userExistsById = async (userId: ObjectId) :Promise<Boolean> => {
+    return !!(await getUserById(userId));
 }
 
 //Create a new user

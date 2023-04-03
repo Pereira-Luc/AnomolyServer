@@ -1,7 +1,7 @@
 
 //Explain: https://www.youtube.com/watch?v=OLXw0X6dlnM
 
-export const sendPushNotification = async (token: string, title: string, body: string) => {
+export const sendPushNotification = async (token: String, title: String, body: String): Promise<void> => {
     console.log('Sending push notification');
     const message = {
         to: token,
