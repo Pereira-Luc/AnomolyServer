@@ -64,6 +64,9 @@ export const getFriendRequestStatusOld = async (username: String, friendUsername
 export const getFriendRequestStatus = async (userID: ObjectId, friendId: ObjectId): Promise<FriendRequestStatus> => {
     const db = await getDb();
 
+    userID = new ObjectId(userID);
+    friendId = new ObjectId(friendId);
+
     const doesUserExist = await userExistsById(userID);
     const doesFriendExist = await userExistsById(friendId);
 
@@ -76,7 +79,7 @@ export const getFriendRequestStatus = async (userID: ObjectId, friendId: ObjectI
 
     if (status.status === Status.Accepted) { return {status: Status.Accepted, needToAcceptBy: ''}}
 
-    if (status.status === Status.Pending) { return {status: Status.Pending, needToAcceptBy: status.frindId}}
+    if (status.status === Status.Pending) { return {status: Status.Pending, needToAcceptBy: status.friendId}}
 
     if (status.status === Status.Declined) { return {status: Status.Declined, needToAcceptBy: status.friendId}}
 
