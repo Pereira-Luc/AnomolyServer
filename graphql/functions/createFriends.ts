@@ -1,5 +1,5 @@
 import {getDb} from "../../mongodb/mongoConnection";
-import {getUser, userExists, userExistsById} from "../../mongodb/functions/users";
+import {getUserById, userExists, userExistsById} from "../../mongodb/functions/users";
 import {ObjectId} from "mongodb";
 import {Status} from "../Enum/Status";
 import {getFriendRequestStatus} from "./searchUser";
@@ -137,31 +137,24 @@ export const getAllFriends = async (userId: ObjectId, status: String): Promise<U
     let userInfoArray: User[] = []
     //Get all the user information for each friend
     for (let i = 0; i < friends.length; i++) {
-        let userInfo = friends[i]
+        let friendShip = friends[i]
+
 
         //Check if status is accepted
-        if (status === Status.Accepted && userInfo.status !== Status.Accepted) { continue;}
+        if (status === Status.Accepted && friendShip.status !== Status.Accepted) { continue }
         //Check if status is pending
-        if (status === Status.Pending && userInfo.status !== Status.Pending) { continue;}
+        if (status === Status.Pending && friendShip.status !== Status.Pending) { continue }
         //Check if status is declined
-        if (status === Status.Declined && userInfo.status !== Status.Declined) { continue;}
+        if (status === Status.Declined && friendShip.status !== Status.Declined) { continue }
 
-        if (userInfo._id === userId) {
-            const user = await getUser(userInfo.friendUsername);
-            //Add chat id to user
-            user.chatId = userInfo.chatId;
 
-            userInfoArray.push(user);
-            continue
-        }
+        //Get the user information except for if the user is the current user
+        const user: User = friendShip.userId.toString() === userId.toString() ?
+            await getUserById(friendShip.friendId) : await getUserById(friendShip.userId);
 
-        if (userInfo._id === userId) {
-            const user = await getUser(userInfo.username);
-            //Add chat id to user
-            user.chatId = userInfo.chatId;
 
-            userInfoArray.push(user);
-        }
+        user.chatId = friendShip.chatId;
+        userInfoArray.push(user);
     }
 
     return userInfoArray;

@@ -119,7 +119,7 @@ export const getChatOfUsers = async (userId: ObjectId, friendId: ObjectId): Prom
  * @param pubSub
  * @param chatId
  */
-export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,message: string, pubSub:PubSub, chatId:ObjectId): Promise<ChatMessage> => {
+export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,message: String, pubSub:PubSub, chatId:ObjectId): Promise<ChatMessage> => {
     let db = await getDb();
 
     //Check if chatId is a ObjectId
@@ -141,7 +141,7 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
     }, {$push: {messages: {message: message, messageTime: date, senderId: senderId, receiverId: receiverId}}});
 
     if (result.acknowledged) {
-        await pubSub.publish('SEND_MSG', {
+        await pubSub.publish(`SEND_MSG_${chatId}`, {
             chatRoomContent: {
                 chatId: chatId,
                 message: message,
@@ -156,9 +156,14 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
         const sender:User = await getUserById(senderId);
         if (receiverInfo) {
             const notificationToken = receiverInfo.pushNotificationToken;
-            if (notificationToken) {
-                await sendPushNotification(notificationToken, sender.username, message);
+
+            const data = {
+                chatRoomId: chatId,
+                nameOfUser: receiverInfo.username,
+                userInfo: receiverInfo
             }
+
+            if (notificationToken) sendPushNotification(notificationToken, sender.username, 'Sent you a message', data)
         }
 
 
@@ -174,34 +179,49 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
  */
 export const loadChatFeed = async (userId: ObjectId): Promise<ChatFeed []> => {
     let db = await getDb();
+
+    userId = new ObjectId(userId);
+
     let friends: User[] = await getAllFriends(userId, Status.Accepted)
+
+    console.log(friends);
 
     let chatFeed: ChatFeed[] = [];
 
     for (let i = 0; i < friends.length; i++) {
         //Chat ID can be null but since we are only getting the accepted friends,
         // the chat ID should never be null
-        let friendInfo = friends[i]
+        const friendInfo = friends[i]
 
-        let chatId: ObjectId = new ObjectId(friendInfo.chatId)
-        if (chatId) {
-            let chat = await db.collection('Chats').findOne({_id: new ObjectId(chatId)});
-            if (chat) {
-                //Check if the chat has any messages
-                let lastMessage = { chatId: chatId, message: "No Messages", messageTime: new Date(), senderId: new ObjectId(''), receiverId: new ObjectId('')};
-                if (chat.messages.length > 0) { lastMessage = chat.messages[chat.messages.length - 1] }
-                //Add profile picture of the friend
-                let profilePic: string | null = await getProfilePicture(friendInfo._id);
-                if (profilePic) { friendInfo.profilePic = profilePic }
-                chatFeed.push({ chatId: chatId ,chatRoomName: friendInfo.username, participants: [friendInfo], lastMessage: lastMessage});
-            }
+        //Check if the chat room exists
+        const chatId: ObjectId = new ObjectId(friendInfo.chatId)
+        if (!chatId) { throw new Error("Chat room does not exist") }
+
+        //Get the chat room from the chats table
+        const chat = await db.collection('Chats').findOne({_id: new ObjectId(chatId)})
+        if (!chat) { throw new Error("Chat room does not exist") }
+
+        //Check if the chat has any messages
+        let lastMessage = { chatId: chatId, message: "No Messages", messageTime: new Date()};
+
+        if (chat.messages.length > 0) {
+            console.log('Get last message');
+            lastMessage = chat.messages[chat.messages.length - 1]
         }
+
+        //Add profile picture of the friend
+        const profilePic: string | null = await getProfilePicture(friendInfo._id);
+        if (profilePic) { friendInfo.profilePic = profilePic }
+
+
+        chatFeed.push({ chatId: chatId ,chatRoomName: friendInfo.username, participants: [friendInfo], lastMessage: lastMessage});
     }
 
     //order the chat feed by the last message time
     chatFeed.sort((a:ChatFeed, b:ChatFeed) => {
         return b.lastMessage.messageTime.getTime() - a.lastMessage.messageTime.getTime();
     });
+
 
     return chatFeed;
 }
@@ -212,6 +232,8 @@ export const loadChatFeed = async (userId: ObjectId): Promise<ChatFeed []> => {
  */
 export const loadChatContent = async (chatId: ObjectId): Promise<ChatMessage []> => {
     const db = await getDb();
+
+    console.log("ChatId: " + chatId);
 
     //Get all the messages from the chat room with the given ID
     const messages = await db.collection('Chats').findOne({_id: chatId});

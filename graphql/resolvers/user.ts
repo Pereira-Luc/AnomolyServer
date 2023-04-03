@@ -4,7 +4,6 @@ import {searchUser} from "../functions/searchUser";
 import {acceptFriendRequest, createFriends, getAllFriends} from "../functions/createFriends";
 import {
     checkIfUserIsPartOfChat,
-    createChatRoom,
     loadChatContent,
     loadChatFeed,
     sendMessage
@@ -48,9 +47,10 @@ export const UserResolvers = {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             console.log('Loading chat content for user ' + context.userInfo.username);
-            if (!await checkIfUserIsPartOfChat(context.userInfo.username, new ObjectId(chatId))) {
+            if (!await checkIfUserIsPartOfChat(context.userInfo._id, new ObjectId(chatId))) {
                 throw new Error("You are not part of this chat");
             }
+            console.log('Loading chat content for user ' + context.userInfo.username);
             return await loadChatContent(new ObjectId(chatId));
         },
         checkIfPushNotificationIsEnabled: async (resolve: any, parent: any, context: any) : Promise<boolean> => {
@@ -121,7 +121,7 @@ export const UserResolvers = {
     Subscription: {
         chatRoomContent: {
             subscribe: async (_: any, {chatId}: any, {userInfo, pubSub}:any) => {
-                console.log('------------------- Subscribing to SEND_MSG_${chatId}  --------------');
+                console.log(`------------------- Subscribing to SEND_MSG_${chatId}  --------------`);
                 if (!userInfo) {
                     throw new Error("You are not authenticated");
                 }

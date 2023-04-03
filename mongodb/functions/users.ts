@@ -20,12 +20,18 @@ export const getUser = async (username: String) :Promise<User> => {
 }
 
 //Get User using ID
-export const getUserById = async (userId: ObjectId) :Promise<User> => {
+export const getUserById = async (userId: ObjectId, wantPassword: boolean = false, wantPublicKey: boolean = false) :Promise<User> => {
     //Check if userID is an ObjectId
     if (typeof userId !== 'object') { userId = new ObjectId(userId); }
 
     const db = await anomolyDb.getDb()
-    return await db.collection('Users').findOne({_id: userId});
+    let result = await db.collection('Users').findOne({_id: userId});
+
+    if (result && !wantPassword) {
+        delete result.password;
+    }
+
+    return result
 }
 
 

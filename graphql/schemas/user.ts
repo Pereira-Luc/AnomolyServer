@@ -18,10 +18,10 @@ export const UserData = /* GraphQL */ `
 
     type Mutation {
         signUp(username: String!, password: String!, confirmPassword: String!, publicKey: Base64): AuthPayload!
-        createFriends(friendUsername: String!): String!
-        acceptRequest(friendUsername: String!): String!
-        createChatRoom(user: String!): String!
-        sendMsg(receiver: String!, message: String!, chatId: ID!): ChatMessage!
+        createFriends(friendId: ID!): String!
+        acceptRequest(friendId: ID!): String!
+        #createChatRoom(user: String!): String!
+        sendMsg(receiverId: ID!, message: String!, chatId: ID!): ChatMessage!
         savePushNotificationToken(token: String!): String!
         changeProfilePicture(image: String!): Boolean!
     }
@@ -51,8 +51,8 @@ export const UserData = /* GraphQL */ `
     type ChatMessage {
         message: String
         messageTime: Datetime
-        sender: String
-        receiver: String
+        senderId: ID
+        receiverId: ID
     }
 
     type ChatRoom {
