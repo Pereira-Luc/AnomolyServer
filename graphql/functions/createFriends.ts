@@ -83,11 +83,14 @@ const checkIfAlreadyFriends = async (userId: ObjectId , fiendId: ObjectId): Prom
 export const createFriends = async (userId: ObjectId, friendId: ObjectId): Promise<String> => {
     const db = await getDb();
 
+    userId = new ObjectId(userId);
+    friendId = new ObjectId(friendId);
+
     // For users to be friends I only need to add them into the table Friends
     // Table Finds looks like this:
     // { Friends:
     //         - _id: ObjectID
-    //         - userId: Object
+    //         - userId: ObjectID
     //         - friendId: String
     //         - status: String (Accepted, Pending, Declined)
     //         - chatId: ObjectID
@@ -120,6 +123,8 @@ export const createFriends = async (userId: ObjectId, friendId: ObjectId): Promi
  */
 export const getAllFriends = async (userId: ObjectId, status: String): Promise<User[]> => {
     const db = await getDb();
+
+    userId = new ObjectId(userId);
 
     //Check if the user exists
     let doesUserExist = await userExistsById(userId);
