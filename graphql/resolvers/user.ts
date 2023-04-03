@@ -136,6 +136,18 @@ export const UserResolvers = {
 
                 return pubSub.asyncIterator([eventName]);
             }
+        },
+        chatFeedContent: {
+            subscribe: async (_: any, parent: any, {userInfo, pubSub}:any) => {
+
+                if (!userInfo) {
+                    throw new Error("You are not authenticated");
+                }
+                const userId = userInfo._id;
+                console.log(`------------------- Subscribing to CHAT_FEED_CONTENT ${userId}  --------------`);
+
+                return pubSub.asyncIterator([`CHAT_FEED_CONTENT${userId}`]);
+            }
         }
     }
 }
