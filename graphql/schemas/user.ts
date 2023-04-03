@@ -11,6 +11,7 @@ export const UserData = /* GraphQL */ `
         loadAllChatFeed: [ChatFeed]!
         loadChatContent(chatId: ID!): [ChatMessage]!
         checkIfPushNotificationIsEnabled: Boolean!
+        getUserProfilePicture(userId: ID!): String!
         testLogin: String!
         fetchTest: String!
     }
@@ -28,6 +29,7 @@ export const UserData = /* GraphQL */ `
     # https://www.youtube.com/watch?v=0y81xnYGWUg Shows how to use subscriptions
     type Subscription {
         chatRoomContent(chatId:ID!): ChatMessage!
+        chatFeedContent: ChatFeed!
     }
 
 
