@@ -11,7 +11,7 @@ export const UserData = /* GraphQL */ `
         loadAllChatFeed: [ChatFeed]!
         loadChatContent(chatId: ID!): [ChatMessage]!
         checkIfPushNotificationIsEnabled: Boolean!
-        getUserProfilePicture(userId: ID!): String!
+        getUserInformation(userId: ID!): User!
         testLogin: String!
         fetchTest: String!
     }
@@ -46,6 +46,7 @@ export const UserData = /* GraphQL */ `
         chatId: ID
         publicKey: Base64!
         profilePic: String
+        profilePicture: String
     }
 
     type ChatMessage {

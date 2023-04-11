@@ -1,6 +1,7 @@
 import {Auth} from "../../graphql/functions/Auth";
 import {User} from "../../interfaces/User";
 import {ObjectId} from "mongodb";
+import {getProfilePicture} from "./profilePic";
 
 const anomolyDb = require('../mongoConnection');
 
@@ -10,6 +11,24 @@ export const hashPassword = async (password: String): Promise<string> => {
     const bcrypt = require('bcrypt');
     const salt = await bcrypt.genSalt(10);
     return await bcrypt.hash(password,salt);
+}
+//_id: ObjectId
+//     username: String
+//     password?: String
+//     friendRequestStatus?: FriendRequestStatus
+//     chatId?: ObjectId
+//     publicKey: string
+//     pushNotificationToken?: string
+//     profilePic?: string
+export const getAllUserInformation = async (userId: ObjectId) :Promise<User> => {
+    userId = new ObjectId(userId);
+    const user: User = await getUserById(userId, false, true);
+    if (user === null) { throw new Error("User not found"); }
+    //Get Profile Picture
+    const profilePic = await getProfilePicture(user._id);
+    if (profilePic) {user.profilePic = profilePic }
+
+    return user;
 }
 
 
