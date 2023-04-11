@@ -4,19 +4,16 @@ import {searchUser} from "../functions/searchUser";
 import {acceptFriendRequest, createFriends, getAllFriends} from "../functions/createFriends";
 import {
     checkIfUserIsPartOfChat,
+    getFriendsShip,
     loadChatContent,
     loadChatFeed,
     sendMessage
 } from "../functions/chatsFunc";
 import {ObjectId} from "mongodb";
-import {
-    getUser,
-    getUserById,
-    savePushNotificationToken
-} from "../../mongodb/functions/users";
+import {getAllUserInformation, getUserById, savePushNotificationToken} from "../../mongodb/functions/users";
 import {changeProfilePicture} from "../../mongodb/functions/profilePic";
 import {User} from "../../interfaces/User";
-
+import {Status} from "../Enum/Status";
 
 
 export const UserResolvers = {
@@ -63,13 +60,23 @@ export const UserResolvers = {
 
             return !!(user.pushNotificationToken);
         },
-        getUserProfilePicture: async (resolve: any, {userId}: any, context: any) : Promise<string> => {
+        getUserInformation: async (resolve: any, {userId}: any, context: any) : Promise<User> => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
-            console.log('Getting profile picture for user ' + context.userInfo.username);
+            console.log('Getting USER Information ID: ' + userId);
+
+            //Check if user is friend or not
+            const loggedInUser:User = context.userInfo;
+            const friendShip = await getFriendsShip(new ObjectId(loggedInUser._id), new ObjectId(userId));
+
+            console.log(friendShip.status);
+
+            if(friendShip.status !== Status.Accepted) { throw new Error("You are not friends with this user") }
+
+            console.log('Getting USER Information ID: ' + userId + ' (User is friend)');
 
             //Check if users are friends
-            return 'Coming soon'
+            return await getAllUserInformation(new ObjectId(userId));
         },
         testLogin: async (resolve: any, parent: any, context: any) => {
             //Check IF the user is authenticated

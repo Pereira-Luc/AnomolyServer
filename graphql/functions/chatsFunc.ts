@@ -124,7 +124,7 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
 
     //Check if chatId is a ObjectId
     //If chatId is not a valid Object, create a new ObjectId
-    if (typeof chatId !== 'object') { chatId = new ObjectId(chatId) }
+    chatId = new ObjectId(chatId);
 
     console.log("Sender: " + senderId);
     console.log("Receiver: " + receiverId);
@@ -154,13 +154,35 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
         //Send notification to the receiver
         let receiverInfo:User = await getUserById(receiverId);
         const sender:User = await getUserById(senderId);
+
+         //CHAT_FEED_CONTENT${userId}
+         await pubSub.publish(`CHAT_FEED_CONTENT${senderId}`, {
+             chatFeedContent: {
+                 chatId: chatId,
+                 lastMessage: {message: message, messageTime: date, senderId: senderId, receiverId: receiverId},
+                 chatRoomName: receiverInfo.username,
+                 participants: [receiverInfo, sender],
+                 lastMessageTime: date,
+             }
+         });
+
+            await pubSub.publish(`CHAT_FEED_CONTENT${receiverId}`, {
+                chatFeedContent: {
+                    chatId: chatId,
+                    lastMessage: {message: message, messageTime: date, senderId: senderId, receiverId: receiverId},
+                    chatRoomName: sender.username,
+                    participants: [sender, receiverInfo],
+                    lastMessageTime: date,
+                }
+            })
+
         if (receiverInfo) {
             const notificationToken = receiverInfo.pushNotificationToken;
 
             const data = {
                 chatRoomId: chatId,
                 nameOfUser: receiverInfo.username,
-                userInfo: receiverInfo
+                userInfo: sender
             }
 
             if (notificationToken) sendPushNotification(notificationToken, sender.username, 'Sent you a message', data)
@@ -183,8 +205,6 @@ export const loadChatFeed = async (userId: ObjectId): Promise<ChatFeed []> => {
     userId = new ObjectId(userId);
 
     let friends: User[] = await getAllFriends(userId, Status.Accepted)
-
-    console.log(friends);
 
     let chatFeed: ChatFeed[] = [];
 
@@ -210,8 +230,8 @@ export const loadChatFeed = async (userId: ObjectId): Promise<ChatFeed []> => {
         }
 
         //Add profile picture of the friend
-        const profilePic: string | null = await getProfilePicture(friendInfo._id);
-        if (profilePic) { friendInfo.profilePic = profilePic }
+        //const profilePic: string | null = await getProfilePicture(friendInfo._id);
+        //if (profilePic) { friendInfo.profilePic = profilePic }
 
 
         chatFeed.push({ chatId: chatId ,chatRoomName: friendInfo.username, participants: [friendInfo], lastMessage: lastMessage});
