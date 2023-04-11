@@ -17,7 +17,7 @@ export const sendPushNotification = async (token: String, title: String, body: S
         contentAvailable: true
     };
 
-    console.table(message)
+    //console.table(message)
 
     const request = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
@@ -29,7 +29,7 @@ export const sendPushNotification = async (token: String, title: String, body: S
 
     const response = await request.json();
 
-    console.log(response.data);
+    //console.log(response.data);
 
     //Check if response is valid
     if (response.data.status !== 'ok') { console.log('Error sending push notification'); }
@@ -45,6 +45,6 @@ export const sendPushNotification = async (token: String, title: String, body: S
     let res = await success.json();
 
     //Check if response is valid
-    console.table(res.data);
+    //console.table(res.data);
 
 }
