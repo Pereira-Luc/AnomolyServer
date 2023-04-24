@@ -12,6 +12,8 @@ export const UserData = /* GraphQL */ `
         loadChatContent(chatId: ID!): [ChatMessage]!
         checkIfPushNotificationIsEnabled: Boolean!
         getUserInformation(userId: ID!): User!
+        getUserProfilePic(userId: ID!): String!
+        getFriendRequests: [User]!
         testLogin: String!
         fetchTest: String!
     }
