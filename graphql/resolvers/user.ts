@@ -14,6 +14,7 @@ import {getAllUserInformation, getUserById, savePushNotificationToken} from "../
 import {changeProfilePicture} from "../../mongodb/functions/profilePic";
 import {User} from "../../interfaces/User";
 import {Status} from "../Enum/Status";
+import {ChatFeed} from "../../interfaces/ChatFeed";
 
 
 export const UserResolvers = {
@@ -77,6 +78,21 @@ export const UserResolvers = {
 
             //Check if users are friends
             return await getAllUserInformation(new ObjectId(userId));
+        },
+        getUserProfilePic: async (resolve: any, {userId}: any, context: any) : Promise<string> => {
+            let userInformation:User = await getAllUserInformation(new ObjectId(userId));
+            if (!userInformation.profilePic) {
+              throw new Error("User has no profile picture");
+            }
+
+            return userInformation.profilePic;
+        },
+        getFriendRequests: async (resolve: any, parent: any, context: any) : Promise<User[]> => {
+            //check if user is authenticated
+            if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
+            console.log('Getting friend requests for user ' + context.userInfo.username);
+
+            return await getAllFriends(new ObjectId(context.userInfo._id), Status.Pending);
         },
         testLogin: async (resolve: any, parent: any, context: any) => {
             //Check IF the user is authenticated
