@@ -1,37 +1,14 @@
 import {getDb} from "../../mongodb/mongoConnection";
-import {getUserById, userExists, userExistsById} from "../../mongodb/functions/users";
+import {getUserById, userExistsById} from "../../mongodb/functions/users";
 import {ObjectId} from "mongodb";
 import {Status} from "../Enum/Status";
 import {getFriendRequestStatus} from "./searchUser";
 import {User} from "../../interfaces/User";
 import {createChatRoom} from "./chatsFunc";
 import {FriendRequestStatus} from "../../interfaces/FriendRequestStatus";
+import {sendPushNotification} from "./pushNotifications";
 
 //Status can be Pending, Accepted, Declined Enum
-
-// This function is used to get the friendship ID between two users
-/**
- * @deprecated
- * @param username
- * @param friendUsername
- */
-export const getFriendshipIdOld = async (username: String, friendUsername: String): Promise<ObjectId> => {
-
-    const db = await getDb();
-
-    //Check if the user exists
-    let doesUserExist = await userExists(username);
-    let doesFriendExist = await userExists(friendUsername);
-
-    if (!doesUserExist) { throw new Error("User does not exist"); }
-    if (!doesFriendExist) { throw new Error("Friend does not exist"); }
-
-
-    let friends = await db.collection('Friends').findOne({$or: [{username: username, friendUsername: friendUsername}, {username: friendUsername, friendUsername: username}]});
-    if (friends) { return friends._id; }
-
-    throw new Error("Friendship ID could not be found");
-}
 
 /**
  * This function is used to get the friendship ID between two users using the userId
@@ -134,6 +111,8 @@ export const getAllFriends = async (userId: ObjectId, status: String): Promise<U
     //I need to check both userId and friendId
     const friends = await db.collection('Friends').find({$or: [{userId: userId}, {friendId: userId}]}).toArray();
 
+    console.log(friends);
+
     let userInfoArray: User[] = []
     //Get all the user information for each friend
     for (let i = 0; i < friends.length; i++) {
@@ -152,11 +131,13 @@ export const getAllFriends = async (userId: ObjectId, status: String): Promise<U
         const user: User = friendShip.userId.toString() === userId.toString() ?
             await getUserById(friendShip.friendId) : await getUserById(friendShip.userId);
 
+        //add the chatId to the user if it exists
+        if (friendShip.chatId) { user.chatId = friendShip.chatId }
+        //add friend request status
+        user.friendRequestStatus = await getFriendRequestStatus(userId, user._id)
 
-        user.chatId = friendShip.chatId;
         userInfoArray.push(user);
     }
-
     return userInfoArray;
 }
 
@@ -174,7 +155,7 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId):
 
     let result = await db.collection('Friends').updateOne({_id: friendshipId}, {$set: {status: Status.Accepted}});
 
-    if (result.acknowledged) {
+    if  (result.modifiedCount === 1) {
         //Create a chat between the two users
         const chatRoom = await createChatRoom(friendshipId);
         console.log(chatRoom);
@@ -182,6 +163,7 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId):
             //If the chat room could not be created then go back to pending
             await db.collection('Friends').updateOne({_id: friendshipId}, {$set: {status: Status.Pending}});
         }
+        let userInformation = await getUserById(userId);
 
         return 'Friend request accepted successfully.'
     }
