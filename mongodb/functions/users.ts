@@ -67,19 +67,12 @@ export const userExistsById = async (userId: ObjectId) :Promise<Boolean> => {
 //Create a new user
 export const createUser = async (username: String, password: String, publicKey: Uint8Array) :Promise<any> => {
     const db = await anomolyDb.getDb()
-    let userId = await generateUserId();
 
-    if (userId === -1) {
-        throw new Error('Could not generate user ID.');
-    }
     let hashedPassword = await hashPassword(password);
 
     console.log("Hashed password: " + hashedPassword);
 
-    //TODO: Later need to add Public Identity Key to the database
-
     const result = await db.collection('Users').insertOne({
-        userId: userId,
         username: username,
         password: hashedPassword,
         publicKey: publicKey,
