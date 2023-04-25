@@ -7,6 +7,7 @@ import {User} from "../../interfaces/User";
 import {createChatRoom} from "./chatsFunc";
 import {FriendRequestStatus} from "../../interfaces/FriendRequestStatus";
 import {sendPushNotification} from "./pushNotifications";
+import {PubSub} from "graphql-subscriptions";
 
 //Status can be Pending, Accepted, Declined Enum
 
@@ -142,7 +143,7 @@ export const getAllFriends = async (userId: ObjectId, status: String): Promise<U
 }
 
 //This function is used to accept a friend request
-export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId): Promise<String> => {
+export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId, pubSub: PubSub): Promise<String> => {
 
     //Check if already friends
     let areFriends = await checkIfAlreadyFriends(userId, friendId);
@@ -152,8 +153,9 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId):
    let friendshipId = await getFriendshipId(userId, friendId);
 
     const db = await getDb();
-
-    let result = await db.collection('Friends').updateOne({_id: friendshipId}, {$set: {status: Status.Accepted}});
+    let acceptedDate = new Date();
+    //Add date accepted
+    let result = await db.collection('Friends').updateOne({_id: friendshipId}, {$set: {status: Status.Accepted, acceptedDate: acceptedDate}});
 
     if  (result.modifiedCount === 1) {
         //Create a chat between the two users
@@ -163,7 +165,39 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId):
             //If the chat room could not be created then go back to pending
             await db.collection('Friends').updateOne({_id: friendshipId}, {$set: {status: Status.Pending}});
         }
-        let userInformation = await getUserById(userId);
+        let userInformation: User = await getUserById(userId);
+        let friendInformation: User = await getUserById(friendId, false, true);
+        let friendPushToken:String | undefined = friendInformation.pushNotificationToken;
+
+        if (friendPushToken){ friendInformation.pushNotificationToken = undefined; }
+
+        console.log('Publishing to ' + `CHAT_FEED_CONTENT${userId}`);
+        await pubSub.publish(`CHAT_FEED_CONTENT${friendId}`, {
+            chatFeedContent: {
+                chatId: chatRoom,
+                lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
+                chatRoomName: userInformation.username,
+                participants: [friendInformation, userInformation],
+                lastMessageTime: acceptedDate,
+            }
+        })
+
+        await pubSub.publish(`CHAT_FEED_CONTENT${userId}`, {
+            chatFeedContent: {
+                chatId: chatRoom,
+                lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
+                chatRoomName: friendInformation.username,
+                participants: [userInformation, friendInformation],
+                lastMessageTime: acceptedDate,
+            }
+        })
+
+
+        //send a notification to the user
+        if (typeof friendPushToken !== 'undefined'){
+            await sendPushNotification(friendPushToken, 'Anomoly', `${userInformation.username} has accepted your friend request.`, {type: 'friendRequestAccepted', userId: userId.toString()});
+        }
+
 
         return 'Friend request accepted successfully.'
     }
