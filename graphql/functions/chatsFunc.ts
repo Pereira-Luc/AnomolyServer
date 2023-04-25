@@ -76,12 +76,17 @@ export const createChatRoom = async (friendShipID: ObjectId): Promise<String> =>
 
     //Check if the chat room already exists
     if (await chatRoomExists(friendShipID)) { throw new Error("Chat room already exists"); }
-    let result = await db.collection('Chats').insertOne({messages: []});
+    const creationDate = new Date();
+    const result = await db.collection('Chats').insertOne({messages: [], creationDateTime: creationDate});
 
     if (result.acknowledged) {
         //Add the chat room ID to the friends table
         let addChatID = await db.collection('Friends').updateOne({_id: friendShipID}, {$set: {chatId: result.insertedId}});
-        if (addChatID.acknowledged) { return 'Chat room created successfully.' }
+        if (addChatID.modifiedCount === 1) {
+            // Update subscription
+
+            return result.insertedId.toString();
+        }
 
         //Undo the chat room creation if the chat room ID could not be added to the friends table
         await db.collection('Chats').deleteOne({_id: result.insertedId});
@@ -222,7 +227,7 @@ export const loadChatFeed = async (userId: ObjectId): Promise<ChatFeed []> => {
         if (!chat) { throw new Error("Chat room does not exist") }
 
         //Check if the chat has any messages
-        let lastMessage = { chatId: chatId, message: "No Messages", messageTime: new Date()};
+        let lastMessage = { chatId: chatId, message: "No Messages", messageTime: chat.creationDateTime};
 
         if (chat.messages.length > 0) {
             console.log('Get last message');
