@@ -6,7 +6,7 @@
  * @param data
  */
 
-export const sendPushNotification = async (token: String, title: String, body: String, data: any) => {
+export const sendPushNotification = async (token: String, title: String, body: String, data: any = null) => {
     console.log('Sending push notification');
     const message = {
         to: token,
