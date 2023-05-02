@@ -4,7 +4,7 @@ import {ObjectId} from "mongodb";
 import {Status} from "../Enum/Status";
 import {getFriendRequestStatus} from "./searchUser";
 import {User} from "../../interfaces/User";
-import {createChatRoom} from "./chatsFunc";
+import {createChatRoom, getChatID} from "./chatsFunc";
 import {FriendRequestStatus} from "../../interfaces/FriendRequestStatus";
 import {sendPushNotification} from "./pushNotifications";
 import {PubSub} from "graphql-subscriptions";
@@ -15,6 +15,7 @@ import {PubSub} from "graphql-subscriptions";
  * This function is used to get the friendship ID between two users using the userId
  * @param userId
  * @param friendId
+ * @returns {Promise<ObjectId>} the friendship ID
  */
 export const getFriendshipId = async (userId: ObjectId, friendId: ObjectId): Promise<ObjectId> => {
     const db = await getDb();
@@ -27,7 +28,7 @@ export const getFriendshipId = async (userId: ObjectId, friendId: ObjectId): Pro
     if (!doesFriendExist) { throw new Error("Friend does not exist"); }
 
     const friends = await db.collection('Friends').findOne({$or: [{userId: userId, friendId: friendId}, {userId: friendId, friendId: userId}]});
-    if (friends) { return friends._id; }
+    if (friends) { return new ObjectId(friends._id) }
 
     throw new Error("Friendship ID could not be found");
 }
@@ -36,6 +37,7 @@ export const getFriendshipId = async (userId: ObjectId, friendId: ObjectId): Pro
  * This function is used to check if a friend request has already been sent
  * @param userId
  * @param friendId
+ * @returns {Promise<boolean>} true if already requested
  */
 const checkIfAlreadyRequested = async (userId: ObjectId , friendId: ObjectId): Promise<boolean> => {
     let request: FriendRequestStatus =  await getFriendRequestStatus(userId, friendId);
@@ -46,6 +48,7 @@ const checkIfAlreadyRequested = async (userId: ObjectId , friendId: ObjectId): P
  * This function is used to accept a friend request
  * @param userId
  * @param fiendId
+ * @returns {Promise<boolean>} true if already friends
  */
 const checkIfAlreadyFriends = async (userId: ObjectId , fiendId: ObjectId): Promise<boolean> => {
     const getFriend: FriendRequestStatus = await getFriendRequestStatus(userId, fiendId);
@@ -57,22 +60,14 @@ const checkIfAlreadyFriends = async (userId: ObjectId , fiendId: ObjectId): Prom
  * This function is used to create a friend request between two users either throws an error or returns the friend request
  * @param userId the user who is sending the friend request
  * @param friendId the user who is receiving the friend request
+ *
+ * @returns Promise<String> Success message
  */
 export const createFriends = async (userId: ObjectId, friendId: ObjectId): Promise<String> => {
     const db = await getDb();
 
     userId = new ObjectId(userId);
     friendId = new ObjectId(friendId);
-
-    // For users to be friends I only need to add them into the table Friends
-    // Table Finds looks like this:
-    // { Friends:
-    //         - _id: ObjectID
-    //         - userId: ObjectID
-    //         - friendId: String
-    //         - status: String (Accepted, Pending, Declined)
-    //         - chatId: ObjectID
-    // }
 
     //Check if the user exists
     let doesUserExist = await userExistsById(userId);
@@ -98,6 +93,7 @@ export const createFriends = async (userId: ObjectId, friendId: ObjectId): Promi
  * This function is used to get all friends of a user using the userId
  * @param userId
  * @param status
+ * @returns {Promise<User[]>}
  */
 export const getAllFriends = async (userId: ObjectId, status: String): Promise<User[]> => {
     const db = await getDb();
@@ -142,7 +138,13 @@ export const getAllFriends = async (userId: ObjectId, status: String): Promise<U
     return userInfoArray;
 }
 
-//This function is used to accept a friend request
+/**
+ * This function is used to accept a friend request
+ * @param userId
+ * @param friendId
+ * @param pubSub
+ * @returns {Promise<String>}
+ */
 export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId, pubSub: PubSub): Promise<String> => {
 
     //Check if already friends
@@ -203,5 +205,49 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId, 
     }
 
     throw new Error("Friend request could not be accepted");
+}
+
+/**
+ * This function is used to Unfriend a user
+ * @param userId the user who is unfriending
+ * @param friendId the user who is being unfriended
+ * @returns {Promise<String>} Success message
+ */
+
+export const unfriend = async (userId: ObjectId, friendId: ObjectId): Promise<String> => {
+   const db = await getDb();
+
+    userId = new ObjectId(userId);
+    friendId = new ObjectId(friendId);
+
+    //Check if the user exists
+    const doesUserExist = await userExistsById(userId);
+    const doesFriendExist = await userExistsById(friendId);
+
+    if (!doesUserExist) { throw new Error("User does not exist"); }
+    if (!doesFriendExist) { throw new Error("Friend does not exist"); }
+
+    //Check if the user is already friends with the friend
+    const areFriends = await checkIfAlreadyFriends(userId, friendId);
+
+    if (!areFriends) { throw new Error("Not friends"); }
+
+    // Get the friendshipId
+    const friendshipId: ObjectId = await getFriendshipId(userId, friendId);
+
+    // get the chatId
+    const chatId: ObjectId | null = await getChatID(friendshipId);
+
+    if (chatId) {
+        //Remove the chat
+        await db.collection('Chats').deleteOne({_id: chatId});
+    }
+
+    //Remove the friendship
+    const result = await db.collection('Friends').deleteOne({_id: friendshipId});
+
+    if (result.deletedCount === 1) { return 'Friend removed successfully.'}
+
+    throw new Error("Friend could not be removed");
 }
 

@@ -26,6 +26,7 @@ export const UserData = /* GraphQL */ `
         sendMsg(receiverId: ID!, message: String!, chatId: ID!): ChatMessage!
         savePushNotificationToken(token: String!): String!
         changeProfilePicture(image: String!): Boolean!
+        unFriend(friendId: ID!): String!
     }
 
     # https://www.youtube.com/watch?v=0y81xnYGWUg Shows how to use subscriptions

@@ -1,7 +1,7 @@
 import {Auth} from "../functions/Auth";
 import {signUp} from "../functions/signUp";
 import {searchUser} from "../functions/searchUser";
-import {acceptFriendRequest, createFriends, getAllFriends} from "../functions/createFriends";
+import {acceptFriendRequest, createFriends, getAllFriends, unfriend} from "../functions/createFriends";
 import {
     checkIfUserIsPartOfChat,
     getFriendsShip,
@@ -14,7 +14,6 @@ import {getAllUserInformation, getUserById, savePushNotificationToken} from "../
 import {changeProfilePicture} from "../../mongodb/functions/profilePic";
 import {User} from "../../interfaces/User";
 import {Status} from "../Enum/Status";
-import {ChatFeed} from "../../interfaces/ChatFeed";
 
 
 export const UserResolvers = {
@@ -56,7 +55,7 @@ export const UserResolvers = {
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             console.log('Checking if push notification is enabled for user ' + context.userInfo.username);
 
-            const user:User = await getUserById(context.userInfo._id);
+            const user : User = await getUserById(context.userInfo._id, false, true );
             if (user === null) { throw new Error("User not found"); }
 
             return !!(user.pushNotificationToken);
@@ -121,7 +120,7 @@ export const UserResolvers = {
         acceptRequest: async (resolve: any, {friendId}: any, context: any) => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
-            return await acceptFriendRequest(new ObjectId(context.userInfo._id), new ObjectId(friendId));
+            return await acceptFriendRequest(new ObjectId(context.userInfo._id), new ObjectId(friendId), context.pubSub);
         },
         sendMsg: async (resolve: any, {receiverId, message, chatId}: any, context: any) => {
             //Check IF the user is authenticated
@@ -138,6 +137,11 @@ export const UserResolvers = {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             return await changeProfilePicture(context.userInfo._id, image);
+        },
+        unFriend: async (resolve: any, {friendId}: any, context: any) => {
+            //Check IF the user is authenticated
+            if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
+            return await unfriend(new ObjectId(context.userInfo._id), new ObjectId(friendId));
         }
     },
 
