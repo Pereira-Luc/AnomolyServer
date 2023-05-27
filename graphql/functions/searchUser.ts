@@ -10,12 +10,24 @@ export const searchUser = async (v: String , userId: ObjectId): Promise<any> => 
     console.log('Searching for user input = ' + v);
     const db = await getDb();
     let allUsers =  await db.collection('Users').find({username: {$regex: v, $options: 'i'}}).toArray();
+    let mySelf: number = -1;
 
-    for (let i = 0; i < allUsers.length; i++) {
-        let otherUser = allUsers[i]._id;
+    for (let i: number = 0; i < allUsers.length; i++) {
+        let otherUser: ObjectId = allUsers[i]._id;
+
+        if (userId.equals(otherUser)) {
+            console.log('Found my self');
+            mySelf = i;
+            continue;
+        }
 
         //Check Status of the friend request
         allUsers[i].friendRequestStatus = await getFriendRequestStatus(userId, otherUser);
+    }
+
+    //Remove my self from the list
+    if (mySelf !== -1) {
+        allUsers.splice(mySelf, 1);
     }
 
     return allUsers;
