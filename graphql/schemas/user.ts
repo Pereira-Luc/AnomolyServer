@@ -14,7 +14,7 @@ export const UserData = /* GraphQL */ `
         getUserInformation(userId: ID!): User!
         getUserProfilePic(userId: ID!): String!
         getFriendRequests: [User]!
-        testLogin: String!
+        isAuth: Boolean!
         fetchTest: String!
     }
 
