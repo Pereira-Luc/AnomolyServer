@@ -1,6 +1,9 @@
 import {createUser, userExists} from "../../mongodb/functions/users";
 
 export const signUp = async (resolve: any, {username, password, confirmPassword, publicKey}: any, context: any) => {
+    // remove spaces at the end and beginning of the username
+    username = username.trim();
+
     //Check if the user exists
     let doesUserExist = await userExists(username);
 
