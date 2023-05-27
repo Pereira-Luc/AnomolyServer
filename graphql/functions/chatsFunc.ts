@@ -181,7 +181,7 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
                 }
             })
 
-        if (receiverInfo) {
+         if (receiverInfo) {
             const notificationToken = receiverInfo.pushNotificationToken;
 
             const data = {
