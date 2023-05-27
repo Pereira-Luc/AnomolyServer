@@ -83,6 +83,18 @@ export const createFriends = async (userId: ObjectId, friendId: ObjectId): Promi
 
     // Add the friend to the database
     let result = await db.collection('Friends').insertOne({ userId: userId, friendId: friendId, status: Status.Pending });
+
+    //Send push notification to the friend
+    const friendInformation: User = await getUserById(friendId, false, true);
+    const friendPushToken:String | undefined = friendInformation.pushNotificationToken;
+
+    const userInformation: User = await getUserById(userId, false, false);
+
+    if (friendPushToken) {
+        sendPushNotification(friendPushToken, "Anomoly", "You have a new friend request from " + userInformation.username)
+    }
+
+
     if (result.acknowledged) { return 'Friend request created successfully.'}
 
     throw new Error("Friend request could not be created");
@@ -174,12 +186,13 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId, 
         if (friendPushToken){ friendInformation.pushNotificationToken = undefined; }
 
         console.log('Publishing to ' + `CHAT_FEED_CONTENT${userId}`);
+
         await pubSub.publish(`CHAT_FEED_CONTENT${friendId}`, {
             chatFeedContent: {
                 chatId: chatRoom,
                 lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
                 chatRoomName: userInformation.username,
-                participants: [friendInformation, userInformation],
+                participants: [userInformation, friendInformation],
                 lastMessageTime: acceptedDate,
             }
         })
@@ -189,7 +202,7 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId, 
                 chatId: chatRoom,
                 lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
                 chatRoomName: friendInformation.username,
-                participants: [userInformation, friendInformation],
+                participants: [friendInformation, userInformation],
                 lastMessageTime: acceptedDate,
             }
         })
