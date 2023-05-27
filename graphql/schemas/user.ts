@@ -44,7 +44,6 @@ export const UserData = /* GraphQL */ `
     type User {
         _id: ID
         username: String!
-        password: String
         friendRequestStatus: FriendRequestStatus
         chatId: ID
         publicKey: Base64!
