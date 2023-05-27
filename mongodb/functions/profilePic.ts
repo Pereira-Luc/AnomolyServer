@@ -27,7 +27,7 @@ export const changeProfilePicture = async (userId: ObjectId, profilePicture: Str
 export const getProfilePicture = async (userId: ObjectId) :Promise<string | null> => {
     console.log('Getting profile picture');
     //Check if userID is an Object
-    if (typeof userId !== 'object') { userId = new ObjectId(userId); }
+    userId = new ObjectId(userId);
 
     const db = await anomolyDb.getDb()
     //Get profile picture from the database Document ProfilePic

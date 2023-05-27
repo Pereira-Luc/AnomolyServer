@@ -140,6 +140,8 @@ export const getAllFriends = async (userId: ObjectId, status: String): Promise<U
         const user: User = friendShip.userId.toString() === userId.toString() ?
             await getUserById(friendShip.friendId) : await getUserById(friendShip.userId);
 
+        if (!user) { continue }
+
         //add the chatId to the user if it exists
         if (friendShip.chatId) { user.chatId = friendShip.chatId }
         //add friend request status
@@ -187,26 +189,27 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId, 
 
         console.log('Publishing to ' + `CHAT_FEED_CONTENT${userId}`);
 
-        await pubSub.publish(`CHAT_FEED_CONTENT${friendId}`, {
-            chatFeedContent: {
-                chatId: chatRoom,
-                lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
-                chatRoomName: userInformation.username,
-                participants: [userInformation, friendInformation],
-                lastMessageTime: acceptedDate,
-            }
-        })
+        if (pubSub) {
+            await pubSub.publish(`CHAT_FEED_CONTENT${friendId}`, {
+                chatFeedContent: {
+                    chatId: chatRoom,
+                    lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
+                    chatRoomName: userInformation.username,
+                    participants: [userInformation, friendInformation],
+                    lastMessageTime: acceptedDate,
+                }
+            })
 
-        await pubSub.publish(`CHAT_FEED_CONTENT${userId}`, {
-            chatFeedContent: {
-                chatId: chatRoom,
-                lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
-                chatRoomName: friendInformation.username,
-                participants: [friendInformation, userInformation],
-                lastMessageTime: acceptedDate,
-            }
-        })
-
+            await pubSub.publish(`CHAT_FEED_CONTENT${userId}`, {
+                chatFeedContent: {
+                    chatId: chatRoom,
+                    lastMessage: {message: "No Message", messageTime: new Date(), senderId: friendId, receiverId: userId},
+                    chatRoomName: friendInformation.username,
+                    participants: [friendInformation, userInformation],
+                    lastMessageTime: acceptedDate,
+                }
+            })
+        }
 
         //send a notification to the user
         if (typeof friendPushToken !== 'undefined'){
@@ -264,3 +267,17 @@ export const unfriend = async (userId: ObjectId, friendId: ObjectId): Promise<St
     throw new Error("Friend could not be removed");
 }
 
+
+/**
+ * Check if friendship exists
+ * @param friendshipId
+ * @returns {Promise<boolean>}
+ * */
+
+export const friendshipExists = async (friendshipId: ObjectId): Promise<boolean> => {
+    const db = await getDb();
+
+    const friendship = await db.collection('Friends').findOne({_id: friendshipId});
+
+    return friendship !== null;
+}

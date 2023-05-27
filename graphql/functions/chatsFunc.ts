@@ -33,7 +33,7 @@ export const getChatID = async (friendShipID: ObjectId): Promise<ObjectId | null
 
     //Get the chat room ID from the friends table
     let res = await db.collection('Friends').findOne({_id: friendShipID});
-    if (!res) { throw new Error("Chat room could not be found"); }
+    if (!res) { return null; }
 
     if (!res.chatId) { return null; }
 
@@ -266,4 +266,17 @@ export const loadChatContent = async (chatId: ObjectId): Promise<ChatMessage []>
     if (!messages) { throw new Error("Chat room does not exist"); }
 
     return messages.messages.reverse();
+}
+
+/**
+ * Check if chat room exists
+ * @param chatId
+ * @return {Promise<boolean>}
+ * */
+export const checkIfChatRoomExists = async (chatId: ObjectId): Promise<boolean> => {
+    const db = await getDb();
+
+    const chatRoom = await db.collection('Chats').findOne({_id: chatId});
+
+    return !!chatRoom;
 }
