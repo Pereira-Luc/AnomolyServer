@@ -49,7 +49,6 @@ export const UserData = /* GraphQL */ `
         chatId: ID
         publicKey: Base64!
         profilePic: String
-        profilePicture: String
     }
 
     type ChatMessage {
