@@ -93,14 +93,14 @@ export const UserResolvers = {
 
             return await getAllFriends(new ObjectId(context.userInfo._id), Status.Pending);
         },
-        testLogin: async (resolve: any, parent: any, context: any) => {
+        isAuth: async (resolve: any, parent: any, context: any):Promise<Boolean> => {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) {
                 console.log('Not authenticated');
-                return "You are not authenticated";
+                return false;
             }
             console.log('Authenticated');
-            return "You are authenticated";
+            return true;
         },
         fetchTest: async (resolve: any, parent: any, context: any) => {
             return "Fetching works";
