@@ -5,6 +5,6 @@ export interface ChatMessage{
     chatId: ObjectId
     message: String
     messageTime: Date
-    sender: String
-    receiver: String
+    senderId?: ObjectId
+    receiverId?: ObjectId
 }

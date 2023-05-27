@@ -42,10 +42,6 @@ export const isAuth = async (req: any) => {
         }
 
     } catch (error) {
-        //console.log(error);
         throw error;
     }
-
-    // Call the next middleware function in the stack (resolvers)
-    return false;
 };

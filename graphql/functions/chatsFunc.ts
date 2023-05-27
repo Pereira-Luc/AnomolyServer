@@ -5,8 +5,8 @@
 //         - messages: [ChatMessage]:
 //                                    - message: String
 //                                    - messageTime: String
-//                                    - sender: String
-//                                    - receiver: String
+//                                    - senderId: ObjectId
+//                                    - receiverId: ObjectId
 //         - createdAt: Date
 //
 
@@ -19,11 +19,15 @@ import {Friends} from "../../interfaces/Friends";
 import {PubSub} from "graphql-subscriptions";
 import {ChatFeed} from "../../interfaces/ChatFeed";
 import {Status} from "../Enum/Status";
-import {getUser} from "../../mongodb/functions/users";
+import {getUser, getUserById} from "../../mongodb/functions/users";
 import {sendPushNotification} from "./pushNotifications";
 import {getProfilePicture} from "../../mongodb/functions/profilePic";
+import {User} from "../../interfaces/User";
 
-//Get Friends Chat ID from inside Chats table
+/**
+ * This function is used to get the chat room ID from the Friends table
+ * @param friendShipID
+ */
 export const getChatID = async (friendShipID: ObjectId): Promise<ObjectId | null> => {
     let db = await getDb();
 
@@ -36,40 +40,53 @@ export const getChatID = async (friendShipID: ObjectId): Promise<ObjectId | null
     return new ObjectId(res.chatId);
 }
 
-export const getFriendsShip = async (username: String, friendUsername: String): Promise<Friends> => {
+/**
+ * This function is used to get a friendShip object from the Friends table
+ * @param userId
+ * @param friendId
+ */
+export const getFriendsShip = async (userId: ObjectId, friendId: ObjectId): Promise<Friends> => {
     let db = await getDb();
     // @ts-ignore
     return await db.collection('Friends').findOne({
-        $or: [{
-            username: username,
-            friendUsername: friendUsername
-        }, {username: friendUsername, friendUsername: username}]
+        $or: [{ userId: userId, friendId: friendId }, {userId: friendId, friendId: userId}]
     });
 }
 
-export const checkIfUserIsPartOfChat = async (username: String, chatId: ObjectId): Promise<boolean> => {
+/**
+ * This function is used to check if a user is part of a chat room
+ * @param userId
+ * @param chatId
+ */
+export const checkIfUserIsPartOfChat = async (userId: ObjectId, chatId: ObjectId): Promise<boolean> => {
     let db = await getDb();
     let res = await db.collection('Friends').findOne({
-        $or: [{
-            username: username,
-            chatId: chatId
-        }, {friendUsername: username, chatId: chatId}]
+        $or: [{ userId: userId,  chatId: chatId }, { friendId: userId, chatId: chatId }]
     });
     return res !== null;
 }
 
 
+/**
+ * This function is used to check if a chat room exists
+ * @param friendShipID
+ */
 export const createChatRoom = async (friendShipID: ObjectId): Promise<String> => {
     let db = await getDb();
 
     //Check if the chat room already exists
     if (await chatRoomExists(friendShipID)) { throw new Error("Chat room already exists"); }
-    let result = await db.collection('Chats').insertOne({messages: []});
+    const creationDate = new Date();
+    const result = await db.collection('Chats').insertOne({messages: [], creationDateTime: creationDate});
 
     if (result.acknowledged) {
         //Add the chat room ID to the friends table
         let addChatID = await db.collection('Friends').updateOne({_id: friendShipID}, {$set: {chatId: result.insertedId}});
-        if (addChatID.acknowledged) { return 'Chat room created successfully.' }
+        if (addChatID.modifiedCount === 1) {
+            // Update subscription
+
+            return result.insertedId.toString();
+        }
 
         //Undo the chat room creation if the chat room ID could not be added to the friends table
         await db.collection('Chats').deleteOne({_id: result.insertedId});
@@ -80,13 +97,16 @@ export const createChatRoom = async (friendShipID: ObjectId): Promise<String> =>
 }
 
 
-//This function checks if the chat room already exists
+/**
+ * This function is used to check if a chat room exists
+ * @param friendShipID
+ */
 export const chatRoomExists = async (friendShipID: ObjectId): Promise<boolean> => {
     return !!(await getChatID(friendShipID));
 }
 
 //This function is used to get the chat between two users
-export const getChatOfUsers = async (username: String, friendUsername: String): Promise<any> => {
+export const getChatOfUsers = async (userId: ObjectId, friendId: ObjectId): Promise<any> => {
     let db = await getDb();
     //Get the chat room ID from the friends table
     //let chatId = await getChatID(username, friendUsername);
@@ -96,27 +116,34 @@ export const getChatOfUsers = async (username: String, friendUsername: String): 
 }
 
 
-//This function is used to send a message to a friend
-export const sendMessage = async (sender: string, receiver:string ,message: string, pubSub:PubSub, chatId:ObjectId): Promise<ChatMessage> => {
+/**
+ * This function is used to send a message to a friend
+ * @param senderId
+ * @param receiverId
+ * @param message
+ * @param pubSub
+ * @param chatId
+ */
+export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,message: String, pubSub:PubSub, chatId:ObjectId): Promise<ChatMessage> => {
     let db = await getDb();
 
     //Check if chatId is a ObjectId
     //If chatId is not a valid Object, create a new ObjectId
-    if (typeof chatId !== 'object') { chatId = new ObjectId(chatId) }
+    chatId = new ObjectId(chatId);
 
-    console.log("Sender: " + sender);
-    console.log("Receiver: " + receiver);
+    console.log("Sender: " + senderId);
+    console.log("Receiver: " + receiverId);
 
     console.log("ChatId: " + chatId);
     console.log("Message: " + message);
 
     //Check if user is part of the chat
-    if (!await checkIfUserIsPartOfChat(sender, chatId)) { throw new Error("User is not part of the chat"); }
+    if (!await checkIfUserIsPartOfChat(senderId, chatId)) { throw new Error("User is not part of the chat"); }
     const date = new Date();
 
     let result = await db.collection('Chats').updateOne({
         _id: chatId
-    }, {$push: {messages: {message: message, messageTime: date, sender: sender, receiver: receiver}}});
+    }, {$push: {messages: {message: message, messageTime: date, senderId: senderId, receiverId: receiverId}}});
 
     if (result.acknowledged) {
         await pubSub.publish(`SEND_MSG_${chatId}`, {
@@ -124,74 +151,114 @@ export const sendMessage = async (sender: string, receiver:string ,message: stri
                 chatId: chatId,
                 message: message,
                 messageTime: date,
-                sender: sender,
-                receiver: receiver
+                senderId: senderId,
+                receiverId: receiverId
             }
         });
 
         //Send notification to the receiver
-        let receiverInfo = await getUser(receiver);
-        if (receiverInfo) {
+        let receiverInfo:User = await getUserById(receiverId);
+        const sender:User = await getUserById(senderId);
+
+         //CHAT_FEED_CONTENT${userId}
+         await pubSub.publish(`CHAT_FEED_CONTENT${senderId}`, {
+             chatFeedContent: {
+                 chatId: chatId,
+                 lastMessage: {message: message, messageTime: date, senderId: senderId, receiverId: receiverId},
+                 chatRoomName: receiverInfo.username,
+                 participants: [receiverInfo, sender],
+                 lastMessageTime: date,
+             }
+         });
+
+            await pubSub.publish(`CHAT_FEED_CONTENT${receiverId}`, {
+                chatFeedContent: {
+                    chatId: chatId,
+                    lastMessage: {message: message, messageTime: date, senderId: senderId, receiverId: receiverId},
+                    chatRoomName: sender.username,
+                    participants: [sender, receiverInfo],
+                    lastMessageTime: date,
+                }
+            })
+
+         if (receiverInfo) {
             const notificationToken = receiverInfo.pushNotificationToken;
 
             const data = {
                 chatRoomId: chatId,
-                nameOfUser: receiver,
-                userInfo: receiverInfo
+                nameOfUser: receiverInfo.username,
+                userInfo: sender
             }
 
-            if (notificationToken) {
-                sendPushNotification(notificationToken, sender, 'Sent you a message', data);
-            }
+            if (notificationToken) sendPushNotification(notificationToken, sender.username, 'Sent you a message', data)
         }
 
 
-        return {chatId: chatId, message: message, messageTime: date, sender: sender , receiver: receiver}
+        return {chatId: chatId, message: message, messageTime: date, senderId: senderId , receiverId: receiverId}
     }
 
     throw new Error("Message could not be sent");
 }
 
-//Function to load the chat feed of a user (all the chats of the user)
-//{chatRoomName: String // being the name of the friend, lastMessage: ChatMessage, lastMessageTime: String}
-export const loadChatFeed = async (username: String): Promise<ChatFeed []> => {
+/**
+ * This function is used to load the chat feed of a user (all the chats of the user)
+ * @param userId
+ */
+export const loadChatFeed = async (userId: ObjectId): Promise<ChatFeed []> => {
     let db = await getDb();
-    let friends = await getAllFriends(username, Status.Accepted)
+
+    userId = new ObjectId(userId);
+
+    let friends: User[] = await getAllFriends(userId, Status.Accepted)
 
     let chatFeed: ChatFeed[] = [];
 
     for (let i = 0; i < friends.length; i++) {
         //Chat ID can be null but since we are only getting the accepted friends,
         // the chat ID should never be null
-        let friendInfo = friends[i]
+        const friendInfo = friends[i]
 
-        let chatId = friendInfo.chatId;
-        if (chatId) {
-            let chat = await db.collection('Chats').findOne({_id: new ObjectId(chatId)});
-            if (chat) {
-                //Check if the chat has any messages
-                let lastMessage = { chatId: chatId, message: "No Messages", messageTime: new Date(), sender: "", receiver: ""};
-                if (chat.messages.length > 0) { lastMessage = chat.messages[chat.messages.length - 1] }
-                //Add profile picture of the friend
-                let profilePic = await getProfilePicture(friendInfo._id);
-                if (profilePic) { friendInfo.profilePic = profilePic }
+        //Check if the chat room exists
+        const chatId: ObjectId = new ObjectId(friendInfo.chatId)
+        if (!chatId) { throw new Error("Chat room does not exist") }
 
-                chatFeed.push({ chatId: chatId ,chatRoomName: friendInfo.username, participants: [friendInfo], lastMessage: lastMessage});
-            }
+        //Get the chat room from the chats table
+        const chat = await db.collection('Chats').findOne({_id: new ObjectId(chatId)})
+        if (!chat) { throw new Error("Chat room does not exist") }
+
+        //Check if the chat has any messages
+        let lastMessage = { chatId: chatId, message: "No Messages", messageTime: chat.creationDateTime};
+
+        if (chat.messages.length > 0) {
+            console.log('Get last message');
+            lastMessage = chat.messages[chat.messages.length - 1]
         }
+
+        //Add profile picture of the friend
+        //const profilePic: string | null = await getProfilePicture(friendInfo._id);
+        //if (profilePic) { friendInfo.profilePic = profilePic }
+
+
+        chatFeed.push({ chatId: chatId ,chatRoomName: friendInfo.username, participants: [friendInfo], lastMessage: lastMessage});
     }
 
     //order the chat feed by the last message time
-    chatFeed.sort((a, b) => {
+    chatFeed.sort((a:ChatFeed, b:ChatFeed) => {
         return b.lastMessage.messageTime.getTime() - a.lastMessage.messageTime.getTime();
     });
+
 
     return chatFeed;
 }
 
-//
+/**
+ * This function is used to load the chat content of a chat room
+ * @param chatId
+ */
 export const loadChatContent = async (chatId: ObjectId): Promise<ChatMessage []> => {
     const db = await getDb();
+
+    console.log("ChatId: " + chatId);
 
     //Get all the messages from the chat room with the given ID
     const messages = await db.collection('Chats').findOne({_id: chatId});

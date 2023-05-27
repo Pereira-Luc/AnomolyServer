@@ -1,6 +1,7 @@
 import {Auth} from "../../graphql/functions/Auth";
 import {User} from "../../interfaces/User";
 import {ObjectId} from "mongodb";
+import {getProfilePicture} from "./profilePic";
 
 const anomolyDb = require('../mongoConnection');
 
@@ -11,6 +12,24 @@ export const hashPassword = async (password: String): Promise<string> => {
     const salt = await bcrypt.genSalt(10);
     return await bcrypt.hash(password,salt);
 }
+//_id: ObjectId
+//     username: String
+//     password?: String
+//     friendRequestStatus?: FriendRequestStatus
+//     chatId?: ObjectId
+//     publicKey: string
+//     pushNotificationToken?: string
+//     profilePic?: string
+export const getAllUserInformation = async (userId: ObjectId) :Promise<User> => {
+    userId = new ObjectId(userId);
+    const user: User = await getUserById(userId, false, true);
+    if (user === null) { throw new Error("User not found"); }
+    //Get Profile Picture
+    const profilePic = await getProfilePicture(user._id);
+    if (profilePic) {user.profilePic = profilePic }
+
+    return user;
+}
 
 
 //Get all information about a user
@@ -20,37 +39,39 @@ export const getUser = async (username: String) :Promise<User> => {
 }
 
 //Get User using ID
-export const getUserById = async (userId: ObjectId) :Promise<User> => {
+export const getUserById = async (userId: ObjectId, wantPassword: boolean = false, wantNotificationKey: boolean = false) :Promise<User> => {
     //Check if userID is an ObjectId
-    if (typeof userId !== 'object') { userId = new ObjectId(userId); }
+    userId = new ObjectId(userId);
 
     const db = await anomolyDb.getDb()
-    return await db.collection('Users').findOne({_id: userId});
+    let result = await db.collection('Users').findOne({_id: userId});
+
+    if (result && !wantPassword) { delete result.password }
+    if (result && !wantNotificationKey) { delete result.pushNotificationToken }
+
+    return result
 }
 
 
 //Check if User exists
 export const userExists = async (username: String) :Promise<Boolean> => {
     return !!(await getUser(username));
+}
 
+//Check if User exists using ID
+export const userExistsById = async (userId: ObjectId) :Promise<Boolean> => {
+    return !!(await getUserById(userId));
 }
 
 //Create a new user
 export const createUser = async (username: String, password: String, publicKey: Uint8Array) :Promise<any> => {
     const db = await anomolyDb.getDb()
-    let userId = await generateUserId();
 
-    if (userId === -1) {
-        throw new Error('Could not generate user ID.');
-    }
     let hashedPassword = await hashPassword(password);
 
     console.log("Hashed password: " + hashedPassword);
 
-    //TODO: Later need to add Public Identity Key to the database
-
     const result = await db.collection('Users').insertOne({
-        userId: userId,
         username: username,
         password: hashedPassword,
         publicKey: publicKey,

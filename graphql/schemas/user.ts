@@ -11,19 +11,22 @@ export const UserData = /* GraphQL */ `
         loadAllChatFeed: [ChatFeed]!
         loadChatContent(chatId: ID!): [ChatMessage]!
         checkIfPushNotificationIsEnabled: Boolean!
-        getUserProfilePicture(userId: ID!): String!
-        testLogin: String!
+        getUserInformation(userId: ID!): User!
+        getUserProfilePic(userId: ID!): String!
+        getFriendRequests: [User]!
+        isAuth: Boolean!
         fetchTest: String!
     }
 
     type Mutation {
         signUp(username: String!, password: String!, confirmPassword: String!, publicKey: Base64): AuthPayload!
-        createFriends(friendUsername: String!): String!
-        acceptRequest(friendUsername: String!): String!
-        createChatRoom(user: String!): String!
-        sendMsg(receiver: String!, message: String!, chatId: ID!): ChatMessage!
+        createFriends(friendId: ID!): String!
+        acceptRequest(friendId: ID!): String!
+        #createChatRoom(user: String!): String!
+        sendMsg(receiverId: ID!, message: String!, chatId: ID!): ChatMessage!
         savePushNotificationToken(token: String!): String!
         changeProfilePicture(image: String!): Boolean!
+        unFriend(friendId: ID!): String!
     }
 
     # https://www.youtube.com/watch?v=0y81xnYGWUg Shows how to use subscriptions
@@ -46,13 +49,14 @@ export const UserData = /* GraphQL */ `
         chatId: ID
         publicKey: Base64!
         profilePic: String
+        profilePicture: String
     }
 
     type ChatMessage {
         message: String
         messageTime: Datetime
-        sender: String
-        receiver: String
+        senderId: ID
+        receiverId: ID
     }
 
     type ChatRoom {

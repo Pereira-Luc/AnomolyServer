@@ -1,7 +1,12 @@
+/**
+ * Send push notification to a specific user
+ * @param token
+ * @param title
+ * @param body
+ * @param data
+ */
 
-//Explain: https://www.youtube.com/watch?v=OLXw0X6dlnM
-
-export const sendPushNotification = async (token: string, title: string, body: string, data: any) => {
+export const sendPushNotification = async (token: String, title: String, body: String, data: any = null) => {
     console.log('Sending push notification');
     const message = {
         to: token,
@@ -12,7 +17,7 @@ export const sendPushNotification = async (token: string, title: string, body: s
         contentAvailable: true
     };
 
-    console.table(message)
+    //console.table(message)
 
     const request = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
@@ -24,7 +29,7 @@ export const sendPushNotification = async (token: string, title: string, body: s
 
     const response = await request.json();
 
-    console.log(response.data);
+    //console.log(response.data);
 
     //Check if response is valid
     if (response.data.status !== 'ok') { console.log('Error sending push notification'); }
@@ -40,7 +45,6 @@ export const sendPushNotification = async (token: string, title: string, body: s
     let res = await success.json();
 
     //Check if response is valid
-    console.table(res.data);
+    //console.table(res.data);
 
 }
-
