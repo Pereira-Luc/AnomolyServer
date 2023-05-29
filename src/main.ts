@@ -23,7 +23,6 @@ const main = async () => {
     const schema = makeExecutableSchema({
         resolvers: [resolvers],
         typeDefs: [typeDefinitions],
-
     })
 
     const app = express();

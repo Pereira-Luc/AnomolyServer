@@ -127,15 +127,8 @@ export const getChatOfUsers = async (userId: ObjectId, friendId: ObjectId): Prom
 export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,message: String, pubSub:PubSub, chatId:ObjectId): Promise<ChatMessage> => {
     let db = await getDb();
 
-    //Check if chatId is a ObjectId
-    //If chatId is not a valid Object, create a new ObjectId
+    //In case the chat room ID is a string, convert it to an ObjectId
     chatId = new ObjectId(chatId);
-
-    console.log("Sender: " + senderId);
-    console.log("Receiver: " + receiverId);
-
-    console.log("ChatId: " + chatId);
-    console.log("Message: " + message);
 
     //Check if user is part of the chat
     if (!await checkIfUserIsPartOfChat(senderId, chatId)) { throw new Error("User is not part of the chat"); }

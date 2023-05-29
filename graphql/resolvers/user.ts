@@ -18,7 +18,7 @@ import {Status} from "../Enum/Status";
 
 export const UserResolvers = {
     Query: {
-        login: async (resolve: any, {username, password}: any, context: any) => {
+        login: async (_:any, {username, password}: any, context: any) => {
             return Auth(username, password);
         },
         searchUser: async (resolve: any, {v}: any, context: any) => {
@@ -69,7 +69,7 @@ export const UserResolvers = {
             const loggedInUser:User = context.userInfo;
             const friendShip = await getFriendsShip(new ObjectId(loggedInUser._id), new ObjectId(userId));
 
-            console.log(friendShip.status);
+            if(!friendShip) { throw new Error("You are not friends with this user") }
 
             if(friendShip.status !== Status.Accepted) { throw new Error("You are not friends with this user") }
 
@@ -149,9 +149,7 @@ export const UserResolvers = {
         chatRoomContent: {
             subscribe: async (_: any, {chatId}: any, {userInfo, pubSub}:any) => {
                 console.log(`------------------- Subscribing to SEND_MSG_${chatId}  --------------`);
-                if (!userInfo) {
-                    throw new Error("You are not authenticated");
-                }
+                if (!userInfo) { throw new Error("You are not authenticated") }
 
                 //Check if the user is part of the chat
                 if (!await checkIfUserIsPartOfChat(new ObjectId(userInfo._id),new ObjectId(chatId))) {

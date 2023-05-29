@@ -17,33 +17,33 @@ export const sendPushNotification = async (token: String, title: String, body: S
         contentAvailable: true
     };
 
-    //console.table(message)
+    try {
+        const request = await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+            },
+            body: JSON.stringify(message),
+        })
 
-    const request = await fetch('https://exp.host/--/api/v2/push/send', {
-        method: 'POST',
-        headers: {
-            Accept: 'application/json',
-        },
-        body: JSON.stringify(message),
-    })
+        const response = await request.json();
 
-    const response = await request.json();
+        //Check if response is valid
+        if (response.data.status !== 'ok') { console.log('Error sending push notification'); }
 
-    //console.log(response.data);
+        const success = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+            },
+            body: JSON.stringify({ids: [response.data.id]}),
+        })
 
-    //Check if response is valid
-    if (response.data.status !== 'ok') { console.log('Error sending push notification'); }
+        let res = await success.json();
 
-    const success = await fetch('https://exp.host/--/api/v2/push/getReceipts', {
-        method: 'POST',
-        headers: {
-            Accept: 'application/json',
-        },
-        body: JSON.stringify({ids: [response.data.id]}),
-    })
-
-    let res = await success.json();
-
+    } catch (error) {
+        console.log(error);
+    }
     //Check if response is valid
     //console.table(res.data);
 

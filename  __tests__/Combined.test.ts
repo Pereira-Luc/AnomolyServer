@@ -31,7 +31,7 @@ import { closeDb } from "../mongodb/mongoConnection";
 
 
 
-describe('login resolver', () => {
+describe('Combined Unit Tests', () => {
   let user_id: ObjectId;
 
   //create user
