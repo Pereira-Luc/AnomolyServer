@@ -39,6 +39,7 @@
     "graphql-yoga": "3.7.0",
     "jsonwebtoken": "9.0.0",
     "mongodb": "^5.1.0",
+    "ts-node": "^10.9.1",
     "ws": "^8.13.0"
   }
 }
