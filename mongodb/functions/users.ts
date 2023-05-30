@@ -2,6 +2,9 @@ import {Auth} from "../../graphql/functions/Auth";
 import {User} from "../../interfaces/User";
 import {ObjectId} from "mongodb";
 import {getProfilePicture} from "./profilePic";
+import { getAllFriends, getFriendshipId, unfriend } from "../../graphql/functions/createFriends";
+import { Status } from "../../graphql/Enum/Status";
+import { getChatID } from "../../graphql/functions/chatsFunc";
 
 const anomolyDb = require('../mongoConnection');
 
@@ -69,7 +72,7 @@ export const createUser = async (username: String, password: String, publicKey: 
 
     let hashedPassword = await hashPassword(password);
 
-    console.log("Hashed password: " + hashedPassword);
+    //console.log("Hashed password: " + hashedPassword);
 
     const result = await db.collection('Users').insertOne({
         username: username,
@@ -78,7 +81,7 @@ export const createUser = async (username: String, password: String, publicKey: 
     })
 
     if (result.acknowledged) {
-        console.log('User created successfully.');
+        //console.log('User created successfully.');
         return Auth(username, password);
     }
 
@@ -119,3 +122,105 @@ export const savePushNotificationToken = async (userId: ObjectId, pushNotificati
     return  result.modifiedCount === 1;
 }
 
+/** Delete User
+ * @param userId
+ * @return {Promise<boolean>}
+ */
+export const deleteUser = async (userId: ObjectId) :Promise<Boolean> => {
+    userId = new ObjectId(userId);
+
+    //delete profile picture if it exists
+    if (!await deleteProfilePicture(userId)) { throw new Error("Could not delete profile picture") }
+
+    //delete all friend requests that the user is in and chats if they exist
+    if (!await deleteAllFriendRequests(userId)) { throw new Error("Could not delete friend requests") }
+
+    const db = await anomolyDb.getDb()
+    const result = await db.collection('Users').deleteOne( {_id: userId});
+    //Check if worked
+    if (result.deletedCount !== 1) { throw new Error("Could not delete user") }
+
+    return true;
+}
+
+/** Delete User
+ * @param userId
+ * @return {Promise<boolean>}
+ */
+
+export const deleteProfilePicture = async (userId: ObjectId) :Promise<Boolean> => {
+    userId = new ObjectId(userId);
+
+    const db = await anomolyDb.getDb()
+    
+    //check if user has a profile picture if not return true
+    const profilePic = await getProfilePicture(userId);
+    if (!profilePic) { return true; }
+
+    //delete profile picture
+    const result = await db.collection('ProfilePic').deleteOne( {user_id : userId});
+    //Check if worked
+    return result.deletedCount === 1;
+}
+
+/** Delete all friend requests that the user is in
+ * @param userId
+ * @return {Promise<boolean>}
+ */
+export const deleteAllFriendRequests = async (userId: ObjectId) :Promise<Boolean> => {
+    userId = new ObjectId(userId);
+
+    const db = await anomolyDb.getDb()
+    //get all friend requests that the user is in
+    const friendRequestsPending = await getAllFriends(userId, Status.Pending);
+    const friendRequestsAccepted = await getAllFriends(userId, Status.Accepted);
+    const friendRequestsDeclined = await getAllFriends(userId, Status.Declined);
+
+    //concat all friend requests
+    const friendRequests = await Promise.all([friendRequestsPending, friendRequestsAccepted, friendRequestsDeclined]);
+
+    //delete all friend requests
+    for (const firendArray of friendRequests) {
+        for (const firend of firendArray) {
+            console.log("Deleting friend request: " + firend._id);
+            if (firend.chatId) { await deleteChat(firend.chatId) }
+
+            let friendShipId = await getFriendshipId(userId, firend._id);
+
+            if (!friendShipId) { continue }
+            
+            if (!await deleteFriendshIp(friendShipId)) { throw new Error("Could not delete friend request") }
+        }
+    }
+    return true;
+}
+
+
+/**Delet chat
+ * @param chatId
+ * @return {Promise<boolean>}
+ */
+export const deleteChat = async (chatId: ObjectId) :Promise<Boolean> => {
+    chatId = new ObjectId(chatId);
+
+    const db = await anomolyDb.getDb()
+    const result = await db.collection('Chats').deleteOne( {_id: chatId});
+    //Check if worked
+    return result.deletedCount === 1;
+}
+
+
+/**Delet friendship
+ * @param friendshipId
+ * @return {Promise<boolean>}
+ */
+
+export const deleteFriendshIp = async (friendshipId: ObjectId) :Promise<Boolean> => {
+    console.log("Deleting friendship: " + friendshipId);
+    friendshipId = new ObjectId(friendshipId);
+
+    const db = await anomolyDb.getDb()
+    const result = await db.collection('Friends').deleteOne( {_id: friendshipId});
+    //Check if worked
+    return result.deletedCount === 1;
+}

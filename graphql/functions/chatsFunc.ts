@@ -33,7 +33,7 @@ export const getChatID = async (friendShipID: ObjectId): Promise<ObjectId | null
 
     //Get the chat room ID from the friends table
     let res = await db.collection('Friends').findOne({_id: friendShipID});
-    if (!res) { throw new Error("Chat room could not be found"); }
+    if (!res) { return null; }
 
     if (!res.chatId) { return null; }
 
@@ -127,15 +127,8 @@ export const getChatOfUsers = async (userId: ObjectId, friendId: ObjectId): Prom
 export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,message: String, pubSub:PubSub, chatId:ObjectId): Promise<ChatMessage> => {
     let db = await getDb();
 
-    //Check if chatId is a ObjectId
-    //If chatId is not a valid Object, create a new ObjectId
+    //In case the chat room ID is a string, convert it to an ObjectId
     chatId = new ObjectId(chatId);
-
-    console.log("Sender: " + senderId);
-    console.log("Receiver: " + receiverId);
-
-    console.log("ChatId: " + chatId);
-    console.log("Message: " + message);
 
     //Check if user is part of the chat
     if (!await checkIfUserIsPartOfChat(senderId, chatId)) { throw new Error("User is not part of the chat"); }
@@ -157,7 +150,7 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
         });
 
         //Send notification to the receiver
-        let receiverInfo:User = await getUserById(receiverId);
+        let receiverInfo:User = await getUserById(receiverId,false,true);
         const sender:User = await getUserById(senderId);
 
          //CHAT_FEED_CONTENT${userId}
@@ -266,4 +259,17 @@ export const loadChatContent = async (chatId: ObjectId): Promise<ChatMessage []>
     if (!messages) { throw new Error("Chat room does not exist"); }
 
     return messages.messages.reverse();
+}
+
+/**
+ * Check if chat room exists
+ * @param chatId
+ * @return {Promise<boolean>}
+ * */
+export const checkIfChatRoomExists = async (chatId: ObjectId): Promise<boolean> => {
+    const db = await getDb();
+
+    const chatRoom = await db.collection('Chats').findOne({_id: chatId});
+
+    return !!chatRoom;
 }

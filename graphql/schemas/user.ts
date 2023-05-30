@@ -27,6 +27,7 @@ export const UserData = /* GraphQL */ `
         savePushNotificationToken(token: String!): String!
         changeProfilePicture(image: String!): Boolean!
         unFriend(friendId: ID!): String!
+        refuseRequest(friendId: ID!): String!
     }
 
     # https://www.youtube.com/watch?v=0y81xnYGWUg Shows how to use subscriptions
@@ -44,12 +45,10 @@ export const UserData = /* GraphQL */ `
     type User {
         _id: ID
         username: String!
-        password: String
         friendRequestStatus: FriendRequestStatus
         chatId: ID
         publicKey: Base64!
         profilePic: String
-        profilePicture: String
     }
 
     type ChatMessage {

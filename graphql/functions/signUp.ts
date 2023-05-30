@@ -22,3 +22,4 @@ export const signUp = async (resolve: any, {username, password, confirmPassword,
     //Create the user
     return await createUser(username, password, publicKey);
 };
+

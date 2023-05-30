@@ -18,10 +18,9 @@ export const Auth = async (user:String, pass:String): Promise<AuthPayload> =>  {
     const bcrypt = require('bcrypt');
     //Get the user from the database
     const userInfo = await getUser(user);
-    console.log("User Info: " , userInfo)
     //Check if the user exists
     if (userInfo === null) { throw new Error("Invalid username or password"); }
-    console.log("User: " + userInfo.username + " Password: " + userInfo.password)
+
     // Username and password
     const userId = new ObjectId(userInfo._id)
     const hashedPassword = userInfo.password;
