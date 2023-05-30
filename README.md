@@ -51,6 +51,29 @@ PORT=4000
 
 ## DOCKER COMPOSE Comming Soon
 
+To run the app using docker compose use the following command:
+
+```bash
+docker-compose up -d
+```
+
+or to force a rebuild use the following command:
+
+```bash
+docker-compose up -d --build
+```
+
+## Testing
+
+To run the tests use the following command:
+
+```bash
+npm test
+```
+
+The tests will check if the server is running and if the database is connected.
+It also tests if functions are working properly like the login and register functions and some other functions.
+
 
 
 
