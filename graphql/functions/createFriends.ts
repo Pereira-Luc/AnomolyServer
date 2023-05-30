@@ -223,6 +223,26 @@ export const acceptFriendRequest = async (userId: ObjectId, friendId: ObjectId, 
     throw new Error("Friend request could not be accepted");
 }
 
+/** Function used to refuse frined Request
+ * @param userId
+ * @param friendId
+ * @returns {Promise<String>}
+ * */
+export const refuseFriendRequest = async (userId: ObjectId, friendId: ObjectId): Promise<String> => {
+    let friendshipId = await getFriendshipId(userId, friendId);
+
+    const db = await getDb();
+
+    // Delete the friendship
+    let res = await db.collection('Friends').deleteOne({_id: friendshipId});
+
+    if (res.deletedCount === 1) {
+        return 'Friend request refused successfully.'
+    }
+
+    throw new Error("Friend request could not be refused");
+}
+
 /**
  * This function is used to Unfriend a user
  * @param userId the user who is unfriending

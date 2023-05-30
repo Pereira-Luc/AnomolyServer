@@ -1,7 +1,7 @@
 import {Auth} from "../functions/Auth";
 import {signUp} from "../functions/signUp";
 import {searchUser} from "../functions/searchUser";
-import {acceptFriendRequest, createFriends, getAllFriends, unfriend} from "../functions/createFriends";
+import {acceptFriendRequest, createFriends, getAllFriends, refuseFriendRequest, unfriend} from "../functions/createFriends";
 import {
     checkIfUserIsPartOfChat,
     getFriendsShip,
@@ -142,6 +142,10 @@ export const UserResolvers = {
             //Check IF the user is authenticated
             if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
             return await unfriend(new ObjectId(context.userInfo._id), new ObjectId(friendId));
+        },refuseRequest : async (resolve: any, {friendId}: any, context: any) => {
+            //Check IF the user is authenticated
+            if (!context.isLoggedIn) { throw new Error("You are not authenticated");}
+            return await refuseFriendRequest(new ObjectId(context.userInfo._id), new ObjectId(friendId));
         }
     },
 
