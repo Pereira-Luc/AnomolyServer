@@ -49,19 +49,11 @@ MONGODB_PASSWORD='1234'
 PORT=4000
 ```
 
-## DOCKER COMPOSE Comming Soon
+## DOCKER
 
-To run the app using docker compose use the following command:
+If you want to use docker to run the server check the link below:
 
-```bash
-docker-compose up -d
-```
-
-or to force a rebuild use the following command:
-
-```bash
-docker-compose up -d --build
-```
+https://github.com/Pereira-Luc/AnomolyDocker
 
 ## Testing
 
