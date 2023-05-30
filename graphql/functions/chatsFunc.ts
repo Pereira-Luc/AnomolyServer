@@ -150,7 +150,7 @@ export const sendMessage = async (senderId: ObjectId, receiverId:ObjectId ,messa
         });
 
         //Send notification to the receiver
-        let receiverInfo:User = await getUserById(receiverId);
+        let receiverInfo:User = await getUserById(receiverId,false,true);
         const sender:User = await getUserById(senderId);
 
          //CHAT_FEED_CONTENT${userId}
